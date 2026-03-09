@@ -2,20 +2,31 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Order } from '../types';
+import { db, auth } from '../firebase';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
 const OrderHistory: React.FC = () => {
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const savedOrders = localStorage.getItem('uni-eats-orders');
-        if (savedOrders) {
-            try {
-                setOrders(JSON.parse(savedOrders));
-            } catch (e) {
-                console.error("Failed to parse orders", e);
-            }
-        }
+        const user = auth.currentUser;
+        if (!user) { setLoading(false); return; }
+
+        const q = query(
+            collection(db, 'orders'),
+            where('userId', '==', user.uid),
+            orderBy('createdAt', 'desc')
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetched: Order[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+            setOrders(fetched);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, []);
 
     return (
@@ -30,20 +41,23 @@ const OrderHistory: React.FC = () => {
             </div>
 
             <header className="px-6 py-4 flex items-center gap-4">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all"
-                >
+                <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all">
                     <span className="material-icons-round text-primary">arrow_back</span>
                 </button>
                 <h1 className="text-xl font-bold text-slate-900 dark:text-white">Order History</h1>
             </header>
 
             <main className="flex-1 overflow-y-auto px-6 py-4 space-y-6 pb-10">
-                {orders.length === 0 ? (
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                        <span className="material-icons-round text-5xl mb-3 animate-spin opacity-40">sync</span>
+                        <p className="text-sm">Loading your orders...</p>
+                    </div>
+                ) : orders.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-slate-400">
                         <span className="material-icons-round text-6xl mb-4 opacity-20">receipt_long</span>
                         <p>No orders yet</p>
+                        <button onClick={() => navigate('/menu')} className="mt-4 text-primary text-sm font-bold">Browse Menu →</button>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -51,15 +65,10 @@ const OrderHistory: React.FC = () => {
                             <div key={order.id} className="bg-white dark:bg-zinc-900 p-5 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-sm">
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
-                                        <h3 className="font-bold text-slate-900 dark:text-white text-lg">
-                                            LKR {order.total.toFixed(2)}
-                                        </h3>
-                                        <p className="text-xs text-slate-400 font-medium">{order.timestamp} • {order.items.length} Items</p>
+                                        <h3 className="font-bold text-slate-900 dark:text-white text-lg">LKR {order.total.toFixed(2)}</h3>
+                                        <p className="text-xs text-slate-400 font-medium">{order.timestamp} • {order.items.length} item{order.items.length !== 1 ? 's' : ''}</p>
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${order.status === 'COMPLETED' ? 'bg-green-100 text-green-600' :
-                                            order.status === 'REJECTED' ? 'bg-red-100 text-red-600' :
-                                                'bg-blue-100 text-blue-600'
-                                        }`}>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${order.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : order.status === 'REJECTED' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
                                         {order.status}
                                     </span>
                                 </div>
@@ -79,7 +88,7 @@ const OrderHistory: React.FC = () => {
                                         <span className="material-icons-round text-sm">credit_card</span>
                                         <span>{order.paymentMethod}</span>
                                     </div>
-                                    <button className="font-bold text-primary">Reorder</button>
+                                    <button onClick={() => navigate('/menu')} className="font-bold text-primary">Reorder</button>
                                 </div>
                             </div>
                         ))}

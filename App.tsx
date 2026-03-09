@@ -1,58 +1,72 @@
 
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { UserRole, Order, MenuItem, OrderStatus, PaymentMethod } from './types';
-import { MENU_ITEMS, INITIAL_ORDERS } from './constants';
+import { MENU_ITEMS } from './constants';
+import { db } from './firebase';
+import {
+  collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy
+} from 'firebase/firestore';
 
 // Pages
 import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
 import CustomerMenu from './pages/CustomerMenu';
 import OrderStatusPage from './pages/OrderStatus';
-
 import Account from './pages/Account';
 import Cart from './pages/Cart';
 import ProfileSettings from './pages/ProfileSettings';
 import NotificationSettings from './pages/NotificationSettings';
 import PrivacySettings from './pages/PrivacySettings';
 import ForgotPin from './pages/ForgotPin';
+import AdminOrders from './pages/AdminOrders';
 import PaymentMethods from './pages/PaymentMethods';
 import OrderHistory from './pages/OrderHistory';
 import HelpSupport from './pages/HelpSupport';
 import Notifications from './pages/Notifications';
 
-// Components
 const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<{ role: UserRole; id: string; name: string } | null>(null);
-
-  // Initialize from localStorage or use defaults
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('uni-eats-orders');
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
-  });
-
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
-    const saved = localStorage.getItem('uni-eats-menu');
-    return saved ? JSON.parse(saved) : MENU_ITEMS;
-  });
-
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
 
-  // Persistence effects
-  useEffect(() => {
-    localStorage.setItem('uni-eats-orders', JSON.stringify(orders));
-  }, [orders]);
-
-  useEffect(() => {
-    localStorage.setItem('uni-eats-menu', JSON.stringify(menuItems));
-  }, [menuItems]);
-
   const navigate = useNavigate();
 
-  const handleLogin = (role: UserRole, id: string) => {
-    // Always Student now
-    const name = 'John Doe';
+  // --- Real-time orders listener from Firestore ---
+  useEffect(() => {
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetched: Order[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+      setOrders(fetched);
+      // Keep activeOrder in sync
+      if (activeOrder) {
+        const updated = fetched.find(o => o.id === activeOrder.id);
+        if (updated) setActiveOrder(updated);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // --- Try to fetch menu from Firestore, fallback to constants ---
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'menu'));
+        if (!snapshot.empty) {
+          const items: MenuItem[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem));
+          setMenuItems(items);
+        }
+        // If Firestore menu is empty, keep MENU_ITEMS from constants
+      } catch (err) {
+        console.warn('Could not load menu from Firestore, using local data.', err);
+      }
+    };
+    fetchMenu();
+  }, []);
+
+  const handleLogin = (role: UserRole, id: string, name: string) => {
     setCurrentUser({ role: UserRole.STUDENT, id, name });
     navigate('/menu');
   };
@@ -78,46 +92,60 @@ const AppContent: React.FC = () => {
     });
   };
 
-  const handlePlaceOrder = (paymentMethod: PaymentMethod) => {
+  const handlePlaceOrder = async (paymentMethod: PaymentMethod) => {
     const itemsToOrder = (Object.entries(cart) as [string, number][]).map(([id, qty]) => {
       const item = menuItems.find(m => m.id === id)!;
-      return {
-        menuItemId: item.id,
-        name: item.name,
-        quantity: qty,
-        price: item.price
-      };
+      return { menuItemId: item.id, name: item.name, quantity: qty, price: item.price };
     });
 
     if (itemsToOrder.length === 0) return;
 
-    const newOrder: Order = {
-      id: `RAW-${Math.floor(1000 + Math.random() * 9000)}`,
+    const total = itemsToOrder.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+    const newOrderData = {
       userId: currentUser?.id || 'GUEST',
       userName: currentUser?.name || 'Guest User',
-      userType: currentUser?.role === UserRole.STUDENT ? 'Student' : 'Staff',
+      userType: 'Student',
       items: itemsToOrder,
-      total: itemsToOrder.reduce((acc, item) => acc + item.price * item.quantity, 0),
+      total,
       status: OrderStatus.PLACED,
-      paymentMethod: paymentMethod,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      paymentMethod,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      createdAt: serverTimestamp(),
     };
 
-    setOrders([newOrder, ...orders]);
-    setActiveOrder(newOrder);
-    setCart({}); // Clear cart after ordering
-    navigate('/order-status');
-  };
-
-  const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-    if (activeOrder?.id === orderId) {
-      setActiveOrder(prev => prev ? { ...prev, status: newStatus } : null);
+    try {
+      // Save to Firestore — the real-time listener will pick it up automatically
+      const docRef = await addDoc(collection(db, 'orders'), newOrderData);
+      const tempOrder: Order = { id: docRef.id, ...newOrderData } as Order;
+      setActiveOrder(tempOrder);
+      setCart({});
+      navigate('/order-status');
+    } catch (err) {
+      console.error('Failed to place order:', err);
+      alert('Failed to place order. Please try again.');
     }
   };
 
-  const toggleAvailability = (itemId: string) => {
+  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    try {
+      await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
+      // The onSnapshot listener will automatically update the orders state
+    } catch (err) {
+      console.error('Failed to update order status:', err);
+    }
+  };
+
+  const toggleAvailability = async (itemId: string) => {
     setMenuItems(prev => prev.map(item => item.id === itemId ? { ...item, available: !item.available } : item));
+    try {
+      const item = menuItems.find(m => m.id === itemId);
+      if (item) {
+        await updateDoc(doc(db, 'menu', itemId), { available: !item.available });
+      }
+    } catch (err) {
+      // Silently fail if menu items aren't in Firestore yet
+    }
   };
 
   return (
@@ -128,11 +156,7 @@ const AppContent: React.FC = () => {
 
       <Route
         path="/account"
-        element={
-          currentUser
-            ? <Account user={currentUser} onLogout={handleLogout} />
-            : <Navigate to="/" />
-        }
+        element={currentUser ? <Account user={currentUser} onLogout={handleLogout} /> : <Navigate to="/" />}
       />
       <Route path="/account/profile" element={<ProfileSettings />} />
       <Route path="/account/notifications" element={<NotificationSettings />} />
@@ -151,32 +175,25 @@ const AppContent: React.FC = () => {
       {/* Student Routes */}
       <Route
         path="/menu"
-        element={
-          currentUser?.role === UserRole.STUDENT
-            ? <CustomerMenu menuItems={menuItems} cart={cart} onUpdateCart={updateCart} />
-            : <Navigate to="/" />
-        }
+        element={currentUser?.role === UserRole.STUDENT
+          ? <CustomerMenu menuItems={menuItems} cart={cart} onUpdateCart={updateCart} />
+          : <Navigate to="/" />}
       />
       <Route
         path="/cart"
-        element={
-          currentUser?.role === UserRole.STUDENT
-            ? <Cart menuItems={menuItems} cart={cart} onUpdateCart={updateCart} onCheckout={handlePlaceOrder} />
-            : <Navigate to="/" />
-        }
+        element={currentUser?.role === UserRole.STUDENT
+          ? <Cart menuItems={menuItems} cart={cart} onUpdateCart={updateCart} onCheckout={handlePlaceOrder} />
+          : <Navigate to="/" />}
       />
       <Route
         path="/order-status"
-        element={
-          currentUser?.role === UserRole.STUDENT
-            ? <OrderStatusPage order={activeOrder} onCancel={(id) => updateOrderStatus(id, OrderStatus.REJECTED)} />
-            : <Navigate to="/" />
-        }
+        element={currentUser?.role === UserRole.STUDENT
+          ? <OrderStatusPage order={activeOrder} onCancel={(id) => updateOrderStatus(id, OrderStatus.REJECTED)} />
+          : <Navigate to="/" />}
       />
 
-
-
-
+      {/* Admin Route */}
+      <Route path="/admin" element={<AdminOrders />} />
 
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
