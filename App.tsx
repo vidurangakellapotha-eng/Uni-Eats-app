@@ -5,7 +5,7 @@ import { UserRole, Order, MenuItem, OrderStatus, PaymentMethod } from './types';
 import { MENU_ITEMS } from './constants';
 import { db } from './firebase';
 import {
-  collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy
+  collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy, where
 } from 'firebase/firestore';
 
 // Pages
@@ -40,11 +40,12 @@ const AppContent: React.FC = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched: Order[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       setOrders(fetched);
-      // Keep activeOrder in sync
-      if (activeOrder) {
-        const updated = fetched.find(o => o.id === activeOrder.id);
-        if (updated) setActiveOrder(updated);
-      }
+      // Keep activeOrder in sync when admin updates status
+      setActiveOrder(prev => {
+        if (!prev) return prev;
+        const updated = fetched.find(o => o.id === prev.id);
+        return updated ?? prev;
+      });
     });
     return () => unsubscribe();
   }, []);
@@ -66,8 +67,28 @@ const AppContent: React.FC = () => {
     fetchMenu();
   }, []);
 
-  const handleLogin = (role: UserRole, id: string, name: string) => {
+  const handleLogin = async (role: UserRole, id: string, name: string) => {
     setCurrentUser({ role: UserRole.STUDENT, id, name });
+
+    // Restore active order from Firestore if one exists for this user
+    try {
+      const q = query(
+        collection(db, 'orders'),
+        where('userId', '==', id),
+        where('status', 'in', [OrderStatus.PLACED, OrderStatus.PREPARING, OrderStatus.READY]),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const restoredOrder = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Order;
+        setActiveOrder(restoredOrder);
+        navigate('/order-status');
+        return;
+      }
+    } catch (err) {
+      console.warn('Could not restore active order:', err);
+    }
+
     navigate('/menu');
   };
 
