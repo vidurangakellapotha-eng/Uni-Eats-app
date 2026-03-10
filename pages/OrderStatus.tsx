@@ -1,15 +1,66 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Order, OrderStatus } from '../types';
+import { db } from '../firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 interface OrderStatusPageProps {
   order: Order | null;
   onCancel: (orderId: string) => void;
 }
 
-const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order, onCancel }) => {
+const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onCancel }) => {
   const navigate = useNavigate();
+  const [order, setOrder] = useState<Order | null>(propOrder);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch directly from Firestore using localStorage orderId
+  // This fixes the timing issue when navigating from login before parent state is set
+  useEffect(() => {
+    const savedOrderId = localStorage.getItem('unieats_active_order_id');
+
+    if (propOrder) {
+      setOrder(propOrder);
+      return;
+    }
+
+    if (!savedOrderId) return;
+
+    setLoading(true);
+    // Subscribe to the specific order document for real-time updates
+    const unsubscribe = onSnapshot(doc(db, 'orders', savedOrderId), (docSnap) => {
+      if (docSnap.exists()) {
+        const fetchedOrder = { id: docSnap.id, ...docSnap.data() } as Order;
+        setOrder(fetchedOrder);
+        // Clear localStorage if order is done
+        if (fetchedOrder.status === OrderStatus.COMPLETED || fetchedOrder.status === OrderStatus.REJECTED) {
+          localStorage.removeItem('unieats_active_order_id');
+        }
+      } else {
+        // Order deleted from Firestore
+        localStorage.removeItem('unieats_active_order_id');
+        setOrder(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [propOrder]);
+
+  // Keep in sync when parent updates propOrder
+  useEffect(() => {
+    if (propOrder) setOrder(propOrder);
+  }, [propOrder]);
+
+  if (loading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center p-10 text-center">
+        <span className="material-icons-round text-5xl text-primary mb-4 animate-spin opacity-60">sync</span>
+        <p className="text-slate-500 text-sm">Loading your order...</p>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -57,7 +108,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order, onCancel }) =>
           <div className="flex justify-between items-center mb-4">
             <div>
               <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black">Current Order</p>
-              <h2 className="text-3xl font-black text-primary dark:text-white mt-1">#{order.id}</h2>
+              <h2 className="text-3xl font-black text-primary dark:text-white mt-1">#{order.id.slice(-6).toUpperCase()}</h2>
             </div>
             <div className={`px-4 py-1.5 rounded-full ${order.status === OrderStatus.PREPARING ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' :
               order.status === OrderStatus.READY ? 'bg-green-50 dark:bg-green-900/20 text-green-600' :
@@ -117,7 +168,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order, onCancel }) =>
         <div className="mt-8 flex items-start p-5 bg-primary/5 dark:bg-white/5 rounded-2xl border border-primary/10">
           <span className="material-icons-round text-primary dark:text-amber-500 mr-3">info</span>
           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">
-            Please show your digital receipt <span className="font-bold text-primary dark:text-white">#{order.id}</span> at the pickup counter once the status is "Ready for Pickup".
+            Please show your digital receipt <span className="font-bold text-primary dark:text-white">#{order.id.slice(-6).toUpperCase()}</span> at the pickup counter once the status is "Ready for Pickup".
           </p>
         </div>
       </main>
@@ -128,6 +179,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order, onCancel }) =>
             onClick={() => {
               if (window.confirm('Are you sure you want to cancel this order?')) {
                 onCancel(order.id);
+                localStorage.removeItem('unieats_active_order_id');
               }
             }}
             className="w-full bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 font-bold py-4 rounded-2xl border border-red-100 dark:border-red-900/20 active:scale-95 transition-all outline-none"
