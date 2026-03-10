@@ -5,7 +5,7 @@ import { UserRole, Order, MenuItem, OrderStatus, PaymentMethod } from './types';
 import { MENU_ITEMS } from './constants';
 import { db } from './firebase';
 import {
-  collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy, where
+  collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy
 } from 'firebase/firestore';
 
 // Pages
@@ -40,12 +40,28 @@ const AppContent: React.FC = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched: Order[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       setOrders(fetched);
-      // Keep activeOrder in sync when admin updates status
-      setActiveOrder(prev => {
-        if (!prev) return prev;
-        const updated = fetched.find(o => o.id === prev.id);
-        return updated ?? prev;
-      });
+
+      // Restore active order from localStorage (survives logout/refresh)
+      const savedOrderId = localStorage.getItem('unieats_active_order_id');
+      if (savedOrderId) {
+        const savedOrder = fetched.find(o => o.id === savedOrderId);
+        if (savedOrder) {
+          // If order is done, clear localStorage
+          if (savedOrder.status === OrderStatus.COMPLETED || savedOrder.status === OrderStatus.REJECTED) {
+            localStorage.removeItem('unieats_active_order_id');
+            setActiveOrder(null);
+          } else {
+            setActiveOrder(savedOrder);
+          }
+        }
+      } else {
+        // Keep activeOrder in sync when admin updates status
+        setActiveOrder(prev => {
+          if (!prev) return prev;
+          const updated = fetched.find(o => o.id === prev.id);
+          return updated ?? prev;
+        });
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -67,29 +83,15 @@ const AppContent: React.FC = () => {
     fetchMenu();
   }, []);
 
-  const handleLogin = async (role: UserRole, id: string, name: string) => {
+  const handleLogin = (role: UserRole, id: string, name: string) => {
     setCurrentUser({ role: UserRole.STUDENT, id, name });
-
-    // Restore active order from Firestore if one exists for this user
-    try {
-      const q = query(
-        collection(db, 'orders'),
-        where('userId', '==', id),
-        where('status', 'in', [OrderStatus.PLACED, OrderStatus.PREPARING, OrderStatus.READY]),
-        orderBy('createdAt', 'desc')
-      );
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const restoredOrder = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Order;
-        setActiveOrder(restoredOrder);
-        navigate('/order-status');
-        return;
-      }
-    } catch (err) {
-      console.warn('Could not restore active order:', err);
+    // If there's a saved active order, the onSnapshot listener will restore it automatically
+    const savedOrderId = localStorage.getItem('unieats_active_order_id');
+    if (savedOrderId) {
+      navigate('/order-status');
+    } else {
+      navigate('/menu');
     }
-
-    navigate('/menu');
   };
 
   const handleLogout = () => {
@@ -138,6 +140,8 @@ const AppContent: React.FC = () => {
     try {
       // Save to Firestore — the real-time listener will pick it up automatically
       const docRef = await addDoc(collection(db, 'orders'), newOrderData);
+      // Save orderId to localStorage so it persists across logout/refresh
+      localStorage.setItem('unieats_active_order_id', docRef.id);
       const tempOrder: Order = { id: docRef.id, ...newOrderData } as Order;
       setActiveOrder(tempOrder);
       setCart({});
