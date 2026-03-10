@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { UserRole, Order, MenuItem, OrderStatus, PaymentMethod } from './types';
 import { MENU_ITEMS } from './constants';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import {
   collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy
 } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
 
 // Pages
 import Login from './pages/Login';
@@ -34,6 +35,20 @@ const AppContent: React.FC = () => {
 
   const navigate = useNavigate();
 
+  // --- Sign in anonymously so Firestore rules allow access ---
+  useEffect(() => {
+    signInAnonymously(auth).catch(err => console.warn('Anonymous auth failed:', err));
+  }, []);
+
+  // --- Navigate to order-status AFTER currentUser state is actually set ---
+  const [pendingNav, setPendingNav] = useState<string | null>(null);
+  useEffect(() => {
+    if (currentUser && pendingNav) {
+      navigate(pendingNav);
+      setPendingNav(null);
+    }
+  }, [currentUser, pendingNav]);
+
   // --- Real-time orders listener from Firestore ---
   useEffect(() => {
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
@@ -46,7 +61,6 @@ const AppContent: React.FC = () => {
       if (savedOrderId) {
         const savedOrder = fetched.find(o => o.id === savedOrderId);
         if (savedOrder) {
-          // If order is done, clear localStorage
           if (savedOrder.status === OrderStatus.COMPLETED || savedOrder.status === OrderStatus.REJECTED) {
             localStorage.removeItem('unieats_active_order_id');
             setActiveOrder(null);
@@ -55,7 +69,6 @@ const AppContent: React.FC = () => {
           }
         }
       } else {
-        // Keep activeOrder in sync when admin updates status
         setActiveOrder(prev => {
           if (!prev) return prev;
           const updated = fetched.find(o => o.id === prev.id);
@@ -85,13 +98,9 @@ const AppContent: React.FC = () => {
 
   const handleLogin = (role: UserRole, id: string, name: string) => {
     setCurrentUser({ role: UserRole.STUDENT, id, name });
-    // If there's a saved active order, the onSnapshot listener will restore it automatically
+    // Use pendingNav so navigation happens AFTER currentUser state update
     const savedOrderId = localStorage.getItem('unieats_active_order_id');
-    if (savedOrderId) {
-      navigate('/order-status');
-    } else {
-      navigate('/menu');
-    }
+    setPendingNav(savedOrderId ? '/order-status' : '/menu');
   };
 
   const handleLogout = () => {
