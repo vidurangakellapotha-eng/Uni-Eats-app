@@ -80,8 +80,11 @@ const AppContent: React.FC = () => {
         // Real authenticated user — restore session automatically
         const name = firebaseUser.displayName || firebaseUser.email || 'Student';
         setCurrentUser({ role: UserRole.STUDENT, id: firebaseUser.uid, name });
+        // Always save userId so Notifications page works after refresh
+        localStorage.setItem('unieats_user_id', firebaseUser.uid);
       } else if (!firebaseUser) {
         setCurrentUser(null);
+        localStorage.removeItem('unieats_user_id');
       }
       setAuthLoading(false);
     });
