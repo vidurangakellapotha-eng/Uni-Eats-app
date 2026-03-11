@@ -36,14 +36,20 @@ const HelpSupport: React.FC = () => {
 
                 {/* Contact Options */}
                 <div className="grid grid-cols-2 gap-4">
-                    <button className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-sm flex flex-col items-center gap-3 active:scale-95 transition-all">
-                        <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center">
+                    <button 
+                        onClick={() => navigate('/account/support/chat')}
+                        className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-sm flex flex-col items-center gap-3 active:scale-95 hover:border-primary/30 transition-all group"
+                    >
+                        <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <span className="material-icons-round">chat</span>
                         </div>
                         <span className="font-bold text-slate-900 dark:text-white text-sm">Live Chat</span>
                     </button>
-                    <button className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-sm flex flex-col items-center gap-3 active:scale-95 transition-all">
-                        <div className="w-12 h-12 rounded-full bg-green-50 text-green-500 flex items-center justify-center">
+                    <button 
+                        onClick={() => window.location.href = 'tel:0112345678'}
+                        className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-sm flex flex-col items-center gap-3 active:scale-95 hover:border-primary/30 transition-all group"
+                    >
+                        <div className="w-12 h-12 rounded-full bg-green-50 dark:bg-green-500/10 text-green-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <span className="material-icons-round">call</span>
                         </div>
                         <span className="font-bold text-slate-900 dark:text-white text-sm">Call Us</span>

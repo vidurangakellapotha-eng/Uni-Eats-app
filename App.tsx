@@ -26,6 +26,7 @@ import OrderHistory from './pages/OrderHistory';
 import HelpSupport from './pages/HelpSupport';
 import Notifications from './pages/Notifications';
 import RateOrderPage from './pages/RateOrder';
+import SupportChat from './pages/SupportChat';
 
 const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<{ role: UserRole; id: string; name: string; photoURL?: string } | null>(null);
@@ -339,6 +340,7 @@ const AppContent: React.FC = () => {
       <Route path="/account/payment" element={<PaymentMethods />} />
       <Route path="/account/history" element={<OrderHistory />} />
       <Route path="/account/support" element={<HelpSupport />} />
+      <Route path="/account/support/chat" element={<SupportChat />} />
       <Route path="/notifications" element={<Notifications userId={currentUser?.id} />} />
 
       {/* Public Route */}
