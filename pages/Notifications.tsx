@@ -39,16 +39,27 @@ function timeAgo(seconds: number): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-const Notifications: React.FC = () => {
+interface NotificationsProps {
+  userId?: string;
+}
+
+const Notifications: React.FC<NotificationsProps> = ({ userId: propUserId }) => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const userId = localStorage.getItem('unieats_user_id');
+  // Use propUserId if provided, otherwise try localStorage
+  const userId = propUserId || localStorage.getItem('unieats_user_id');
 
   useEffect(() => {
-    if (!userId) { setLoading(false); return; }
+    if (!userId) { 
+      // If we don't have a userId yet, we might still be loading the auth state in App.tsx
+      // Let's give it a moment if we're not explicitly logged out
+      const timer = setTimeout(() => setLoading(false), 1500);
+      return () => clearTimeout(timer);
+    }
 
+    setLoading(true);
     // Query notifications for this user (client-side sort to avoid composite index)
     const q = query(collection(db, 'notifications'), where('userId', '==', userId));
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -57,7 +68,10 @@ const Notifications: React.FC = () => {
         .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
       setNotifications(data);
       setLoading(false);
-    }, () => setLoading(false));
+    }, (err) => {
+      console.error("Notifications fetch error:", err);
+      setLoading(false);
+    });
     return () => unsubscribe();
   }, [userId]);
 

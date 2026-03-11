@@ -80,8 +80,7 @@ const AppContent: React.FC = () => {
         // Real authenticated user — restore session automatically
         const name = firebaseUser.displayName || firebaseUser.email || 'Student';
         setCurrentUser({ role: UserRole.STUDENT, id: firebaseUser.uid, name });
-        // Always save userId so Notifications page works after refresh
-        localStorage.setItem('unieats_user_id', firebaseUser.uid);
+        localStorage.setItem('unieats_user_id', firebaseUser.uid); // Keep in sync for notifications
       } else if (!firebaseUser) {
         setCurrentUser(null);
         localStorage.removeItem('unieats_user_id');
@@ -331,7 +330,7 @@ const AppContent: React.FC = () => {
       <Route path="/account/payment" element={<PaymentMethods />} />
       <Route path="/account/history" element={<OrderHistory />} />
       <Route path="/account/support" element={<HelpSupport />} />
-      <Route path="/notifications" element={<Notifications />} />
+      <Route path="/notifications" element={<Notifications userId={currentUser?.id} />} />
 
       {/* Public Route */}
       <Route
