@@ -113,13 +113,23 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
                   <h3 className="font-bold text-xs dark:text-white leading-tight line-clamp-1">{item.name}</h3>
                   <span className="text-primary font-black text-[11px]">LKR {item.price}</span>
                 </div>
-                <p className="text-[9px] text-slate-500 dark:text-slate-400 mb-3 line-clamp-2 h-6">{item.description}</p>
-                <div className="mt-auto flex items-center justify-between">
-                  <div className="flex items-center text-secondary">
-                    <span className="material-icons-round text-[10px]">star</span>
-                    <span className="text-[9px] font-black ml-0.5">{item.rating}</span>
+                <p className="text-[9px] text-slate-500 dark:text-slate-400 mb-2 line-clamp-2 h-6">{item.description}</p>
+                <div className="mt-auto">
+                  {/* Rating + Prep Time row */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center text-secondary">
+                      <span className="material-icons-round text-[10px]">star</span>
+                      <span className="text-[9px] font-black ml-0.5">{item.rating}</span>
+                    </div>
+                    {item.prepTime && (
+                      <div className="flex items-center gap-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                        <span className="material-icons-round text-[9px]">schedule</span>
+                        <span className="text-[9px] font-black">{item.prepTime} min</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  {/* Add to cart */}
+                  <div className="flex items-center justify-end gap-1.5">
                     {!readOnly ? (
                       <>
                         {cart[item.id] > 0 && (
@@ -144,9 +154,7 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
                         </button>
                       </>
                     ) : (
-                      <button
-                        className="p-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-400 cursor-default"
-                      >
+                      <button className="p-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-400 cursor-default">
                         <span className="material-icons-round text-[16px]">visibility</span>
                       </button>
                     )}
