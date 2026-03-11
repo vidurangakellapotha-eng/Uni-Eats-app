@@ -27,10 +27,11 @@ const SupportChat: React.FC = () => {
             return;
         }
 
+        // Removed orderBy to avoid requiring a composite index in Firestore
+        // We will sort locally to ensure it works immediately without manual index creation
         const q = query(
             collection(db, 'supportMessages'),
-            where('chatId', '==', user.uid),
-            orderBy('createdAt', 'asc')
+            where('chatId', '==', user.uid)
         );
 
         const unsubscribe = onSnapshot(q, (snap) => {
@@ -38,7 +39,18 @@ const SupportChat: React.FC = () => {
                 id: doc.id,
                 ...doc.data()
             } as Message));
+            
+            // Sort locally by timestamp
+            msgs.sort((a, b) => {
+                const timeA = a.createdAt?.toMillis?.() || 0;
+                const timeB = b.createdAt?.toMillis?.() || 0;
+                return timeA - timeB;
+            });
+
             setMessages(msgs);
+            setLoading(false);
+        }, (err) => {
+            console.error("Chat listener error:", err);
             setLoading(false);
         });
 
