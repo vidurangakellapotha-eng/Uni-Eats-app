@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { collection, addDoc, onSnapshot, query, where, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 interface SavedCard {
     id: string;
-    cardNumber: string; // Stored as masked **** **** **** 1234
+    cardNumber: string; // Masked
     cardType: 'visa' | 'mastercard' | 'amex' | 'other';
     holderName: string;
     expiryDate: string;
@@ -17,6 +18,8 @@ const PaymentMethods: React.FC = () => {
     const [cards, setCards] = useState<SavedCard[]>([]);
     const [isAdding, setIsAdding] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+    const [user, setUser] = useState<User | null>(auth.currentUser);
 
     // Form states
     const [formData, setFormData] = useState({
@@ -26,39 +29,71 @@ const PaymentMethods: React.FC = () => {
         cvv: ''
     });
 
-    const user = auth.currentUser;
+    useEffect(() => {
+        const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+            setUser(u);
+            if (!u) setLoading(false);
+        });
+
+        return () => unsubscribeAuth();
+    }, []);
 
     useEffect(() => {
-        if (!user) {
-            setLoading(false);
-            return;
-        }
+        if (!user) return;
 
+        setLoading(true);
         const q = query(collection(db, 'payment_methods'), where('userId', '==', user.uid));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SavedCard));
             setCards(fetched);
             setLoading(false);
+        }, (err) => {
+            console.error("Firestore error:", err);
+            setLoading(false);
         });
         return () => unsubscribe();
     }, [user]);
 
+    // Formatters
+    const formatCardNumber = (val: string) => {
+        const numbers = val.replace(/\D/g, '').slice(0, 16);
+        return numbers.replace(/(\d{4})/g, '$1 ').trim();
+    };
+
+    const formatExpiry = (val: string) => {
+        const numbers = val.replace(/\D/g, '').slice(0, 4);
+        if (numbers.length > 2) {
+            return numbers.substring(0, 2) + '/' + numbers.substring(2);
+        }
+        return numbers;
+    };
+
     const handleAddCard = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user) return;
+        const currentUser = auth.currentUser || user;
+        if (!currentUser) {
+            alert("Session expired. Please log in again.");
+            return;
+        }
 
+        if (formData.number.replace(/\D/g, '').length < 16) {
+            alert("Please enter a valid 16-digit card number.");
+            return;
+        }
+
+        setSubmitting(true);
         // Mask the number
-        const last4 = formData.number.slice(-4);
+        const last4 = formData.number.replace(/\D/g, '').slice(-4);
         const masked = `**** **** **** ${last4}`;
         
-        // Determine type (simple logic)
         let type: SavedCard['cardType'] = 'other';
-        if (formData.number.startsWith('4')) type = 'visa';
-        else if (formData.number.startsWith('5')) type = 'mastercard';
+        const num = formData.number.replace(/\D/g, '');
+        if (num.startsWith('4')) type = 'visa';
+        else if (num.startsWith('5')) type = 'mastercard';
 
         try {
             await addDoc(collection(db, 'payment_methods'), {
-                userId: user.uid,
+                userId: currentUser.uid,
                 cardNumber: masked,
                 cardType: type,
                 holderName: formData.name,
@@ -69,7 +104,9 @@ const PaymentMethods: React.FC = () => {
             setFormData({ number: '', name: '', expiry: '', cvv: '' });
         } catch (err) {
             console.error("Error adding card:", err);
-            alert("Failed to add card. Please try again.");
+            alert("Failed to save card. Check your connection.");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -125,12 +162,19 @@ const PaymentMethods: React.FC = () => {
                     <div className="flex justify-center p-8">
                         <span className="material-icons-round animate-spin text-primary">sync</span>
                     </div>
+                ) : !user ? (
+                    <div className="text-center p-8 bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-100 dark:border-zinc-800">
+                        <p className="text-slate-500 text-sm">Please log in to manage your cards.</p>
+                        <button onClick={() => navigate('/login')} className="mt-4 text-primary font-bold">Login Now</button>
+                    </div>
                 ) : (
                     <div className="space-y-4">
                         {cards.map(card => (
                             <div key={card.id} className="flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
                                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.cardType === 'visa' ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-600'}`}>
-                                    <span className="material-icons-round">{card.cardType === 'visa' ? 'credit_card' : 'payments'}</span>
+                                    <span className="material-icons-round text-2xl">
+                                        {card.cardType === 'visa' ? 'credit_card' : 'payments'}
+                                    </span>
                                 </div>
                                 <div className="flex-1">
                                     <h4 className="font-bold text-slate-900 dark:text-white text-sm">{card.cardType.toUpperCase()} ending in {card.cardNumber.slice(-4)}</h4>
@@ -160,9 +204,9 @@ const PaymentMethods: React.FC = () => {
                                         required
                                         type="text" 
                                         placeholder="0000 0000 0000 0000"
-                                        className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800 border-none text-sm font-bold"
+                                        className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800 border-none text-sm font-bold placeholder:opacity-30"
                                         value={formData.number}
-                                        onChange={e => setFormData({ ...formData, number: e.target.value.replace(/\D/g, '').slice(0, 16) })}
+                                        onChange={e => setFormData({ ...formData, number: formatCardNumber(e.target.value) })}
                                     />
                                 </div>
 
@@ -171,8 +215,8 @@ const PaymentMethods: React.FC = () => {
                                     <input 
                                         required
                                         type="text" 
-                                        placeholder="Full Name"
-                                        className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800 border-none text-sm font-bold"
+                                        placeholder="Name on card"
+                                        className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800 border-none text-sm font-bold placeholder:opacity-30"
                                         value={formData.name}
                                         onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     />
@@ -185,9 +229,9 @@ const PaymentMethods: React.FC = () => {
                                             required
                                             type="text" 
                                             placeholder="MM/YY"
-                                            className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800 border-none text-sm font-bold"
+                                            className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800 border-none text-sm font-bold placeholder:opacity-30"
                                             value={formData.expiry}
-                                            onChange={e => setFormData({ ...formData, expiry: e.target.value.slice(0, 5) })}
+                                            onChange={e => setFormData({ ...formData, expiry: formatExpiry(e.target.value) })}
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -196,7 +240,7 @@ const PaymentMethods: React.FC = () => {
                                             required
                                             type="password" 
                                             placeholder="***"
-                                            className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800 border-none text-sm font-bold"
+                                            className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800 border-none text-sm font-bold placeholder:opacity-30"
                                             value={formData.cvv}
                                             onChange={e => setFormData({ ...formData, cvv: e.target.value.replace(/\D/g, '').slice(0, 3) })}
                                         />
@@ -204,10 +248,16 @@ const PaymentMethods: React.FC = () => {
                                 </div>
 
                                 <button 
+                                    disabled={submitting}
                                     type="submit"
-                                    className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                                    className={`w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 transition-all ${submitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                                 >
-                                    Save Card Details
+                                    {submitting ? (
+                                        <>
+                                            <span className="material-icons-round animate-spin text-sm">sync</span>
+                                            Saving...
+                                        </>
+                                    ) : 'Save Card Details'}
                                 </button>
                             </form>
                         ) : (
