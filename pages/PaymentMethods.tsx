@@ -92,7 +92,8 @@ const PaymentMethods: React.FC = () => {
         else if (num.startsWith('5')) type = 'mastercard';
 
         try {
-            await addDoc(collection(db, 'payment_methods'), {
+            console.log("Attempting to save card for user:", currentUser.uid);
+            const docRef = await addDoc(collection(db, 'payment_methods'), {
                 userId: currentUser.uid,
                 cardNumber: masked,
                 cardType: type,
@@ -100,11 +101,20 @@ const PaymentMethods: React.FC = () => {
                 expiryDate: formData.expiry,
                 createdAt: serverTimestamp()
             });
+            console.log("Card saved with ID:", docRef.id);
             setIsAdding(false);
             setFormData({ number: '', name: '', expiry: '', cvv: '' });
-        } catch (err) {
-            console.error("Error adding card:", err);
-            alert("Failed to save card. Check your connection.");
+        } catch (err: any) {
+            console.error("FULL ERROR SAVING CARD:", err);
+            let msg = "Failed to save card.";
+            if (err.code === 'permission-denied') {
+                msg += " Firestore rules are blocking this write. Please check your Firebase rules.";
+            } else if (err.code === 'unavailable') {
+                msg += " Firestore service is currently unavailable. Check your connection.";
+            } else {
+                msg += " " + (err.message || "Unknown error occurred.");
+            }
+            alert(msg);
         } finally {
             setSubmitting(false);
         }
