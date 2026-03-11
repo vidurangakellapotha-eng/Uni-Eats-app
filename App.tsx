@@ -25,6 +25,7 @@ import PaymentMethods from './pages/PaymentMethods';
 import OrderHistory from './pages/OrderHistory';
 import HelpSupport from './pages/HelpSupport';
 import Notifications from './pages/Notifications';
+import RateOrderPage from './pages/RateOrder';
 
 const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<{ role: UserRole; id: string; name: string } | null>(null);
@@ -263,6 +264,22 @@ const AppContent: React.FC = () => {
         element={currentUser?.role === UserRole.STUDENT
           ? <OrderStatusPage order={activeOrder} onCancel={(id) => updateOrderStatus(id, OrderStatus.REJECTED)} />
           : <Navigate to="/" />}
+      />
+
+      {/* Rating Route — reads order from localStorage, no auth guard needed */}
+      <Route
+        path="/rate-order"
+        element={(() => {
+          const raw = localStorage.getItem('unieats_rating_order');
+          if (!raw) return <Navigate to="/" />;
+          const ord = JSON.parse(raw) as Order;
+          return <RateOrderPage
+            orderId={ord.id}
+            items={ord.items}
+            userId={currentUser?.id || ord.userId}
+            userName={currentUser?.name || ord.userName}
+          />;
+        })()}
       />
 
       {/* Admin Route */}

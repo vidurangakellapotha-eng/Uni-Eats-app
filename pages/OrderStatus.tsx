@@ -33,12 +33,14 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
       if (docSnap.exists()) {
         const fetchedOrder = { id: docSnap.id, ...docSnap.data() } as Order;
         setOrder(fetchedOrder);
-        // Clear localStorage if order is done
-        if (fetchedOrder.status === OrderStatus.COMPLETED || fetchedOrder.status === OrderStatus.REJECTED) {
+        if (fetchedOrder.status === OrderStatus.COMPLETED) {
+          // Store order data for rating page, don't clear localStorage yet
+          localStorage.setItem('unieats_rating_order', JSON.stringify(fetchedOrder));
+          navigate('/rate-order');
+        } else if (fetchedOrder.status === OrderStatus.REJECTED) {
           localStorage.removeItem('unieats_active_order_id');
         }
       } else {
-        // Order deleted from Firestore
         localStorage.removeItem('unieats_active_order_id');
         setOrder(null);
       }
@@ -48,9 +50,16 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
     return () => unsubscribe();
   }, [propOrder]);
 
-  // Keep in sync when parent updates propOrder
+  // Keep in sync when parent updates propOrder (real-time status changes)
   useEffect(() => {
-    if (propOrder) setOrder(propOrder);
+    if (!propOrder) return;
+    setOrder(propOrder);
+    if (propOrder.status === OrderStatus.COMPLETED) {
+      localStorage.setItem('unieats_rating_order', JSON.stringify(propOrder));
+      navigate('/rate-order');
+    } else if (propOrder.status === OrderStatus.REJECTED) {
+      localStorage.removeItem('unieats_active_order_id');
+    }
   }, [propOrder]);
 
   if (loading) {
