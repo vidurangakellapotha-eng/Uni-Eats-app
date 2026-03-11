@@ -138,10 +138,19 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
                   {isActive && step.status === OrderStatus.PREPARING && (
                     <div className="mt-4">
                       <div className="w-48 h-2 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary w-2/3 rounded-full animate-[progress_3s_infinite]"></div>
+                        <div className="h-full bg-primary rounded-full animate-[progress_3s_infinite]" style={{ width: '66%' }}></div>
                       </div>
-                      <p className="text-xs font-bold text-primary dark:text-amber-400 mt-2.5">Est. completion: 5-8 mins</p>
+                      <p className="text-xs font-bold text-primary dark:text-amber-400 mt-2.5">
+                        {order.prepTime
+                          ? `⏱ Est. ${order.prepTime} min${order.prepTime !== 1 ? 's' : ''} to prepare`
+                          : '⏱ Est. 5–10 mins to prepare'}
+                      </p>
                     </div>
+                  )}
+                  {isActive && step.status === OrderStatus.PLACED && order.prepTime && (
+                    <p className="text-xs text-slate-400 mt-1.5">
+                      ⏱ Estimated prep time: <span className="font-bold text-primary">{order.prepTime} min{order.prepTime !== 1 ? 's' : ''}</span>
+                    </p>
                   )}
                 </div>
               </div>

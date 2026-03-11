@@ -168,6 +168,11 @@ const AppContent: React.FC = () => {
       total,
       status: OrderStatus.PLACED,
       paymentMethod,
+      // Store max prepTime across all ordered items
+      prepTime: Math.max(...itemsToOrder.map(i => {
+        const menuItem = menuItems.find(m => m.id === i.menuItemId);
+        return menuItem?.prepTime ?? 10;
+      })),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       createdAt: serverTimestamp(),
     };

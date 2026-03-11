@@ -28,6 +28,7 @@ export interface MenuItem {
   available: boolean;
   rating: number;
   reviewCount: number;
+  prepTime?: number; // minutes
 }
 
 export interface OrderItem {
@@ -47,5 +48,6 @@ export interface Order {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   timestamp: string;
+  prepTime?: number; // estimated prep minutes (max across all items)
   estimatedCompletion?: string;
 }
