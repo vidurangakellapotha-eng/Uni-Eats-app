@@ -211,7 +211,7 @@ const AppContent: React.FC = () => {
     });
   };
 
-  const handlePlaceOrder = async (paymentMethod: PaymentMethod) => {
+  const handlePlaceOrder = async (paymentMethod: PaymentMethod, cardId?: string) => {
     const itemsToOrder = (Object.entries(cart) as [string, number][]).map(([id, qty]) => {
       const item = menuItems.find(m => m.id === id)!;
       return { menuItemId: item.id, name: item.name, quantity: qty, price: item.price };
@@ -229,6 +229,7 @@ const AppContent: React.FC = () => {
       total,
       status: OrderStatus.PLACED,
       paymentMethod,
+      cardId,
       // Store max prepTime across all ordered items
       prepTime: Math.max(...itemsToOrder.map(i => {
         const menuItem = menuItems.find(m => m.id === i.menuItemId);

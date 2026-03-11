@@ -1,18 +1,42 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MenuItem, PaymentMethod } from '../types';
+import { db, auth } from '../firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+
+interface SavedCard {
+  id: string;
+  cardNumber: string;
+  cardType: string;
+}
 
 interface CartProps {
   menuItems: MenuItem[];
   cart: Record<string, number>;
   onUpdateCart: (itemId: string, delta: number) => void;
-  onCheckout: (method: PaymentMethod) => void;
+  onCheckout: (method: PaymentMethod, cardId?: string) => void;
 }
 
 const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }) => {
   const navigate = useNavigate();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(PaymentMethod.CREDITS);
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string>('');
+  const user = auth.currentUser;
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'payment_methods'), where('userId', '==', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const cards = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SavedCard));
+      setSavedCards(cards);
+      if (cards.length > 0 && !selectedCardId) {
+        setSelectedCardId(cards[0].id);
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   const cartItems = Object.entries(cart).map(([id, qty]) => {
     const item = menuItems.find(m => m.id === id)!;
@@ -41,7 +65,9 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
       id: PaymentMethod.CARD, 
       icon: 'credit_card', 
       title: 'Credit/Debit Card', 
-      desc: 'Visa •••• 4242',
+      desc: savedCards.length > 0 
+        ? `${savedCards.find(c => c.id === selectedCardId)?.cardType.toUpperCase() || 'Card'} ${savedCards.find(c => c.id === selectedCardId)?.cardNumber.slice(-9)}`
+        : 'No cards saved',
       color: 'bg-blue-500/10 text-blue-600' 
     }
   ];
@@ -142,30 +168,64 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
           <p className="px-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Choose Payment Method</p>
           <div className="space-y-3">
             {paymentOptions.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setSelectedMethod(opt.id)}
-                className={`w-full bg-white dark:bg-zinc-900 rounded-[24px] p-4 shadow-sm border transition-all flex items-center justify-between group ${
-                  selectedMethod === opt.id 
-                    ? 'border-primary ring-1 ring-primary/20 bg-primary/[0.02]' 
-                    : 'border-slate-100 dark:border-zinc-800'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${opt.color}`}>
-                    <span className="material-icons-round text-xl">{opt.icon}</span>
+              <div key={opt.id} className="space-y-3">
+                <button
+                  onClick={() => setSelectedMethod(opt.id)}
+                  className={`w-full bg-white dark:bg-zinc-900 rounded-[24px] p-4 shadow-sm border transition-all flex items-center justify-between group ${
+                    selectedMethod === opt.id 
+                      ? 'border-primary ring-1 ring-primary/20 bg-primary/[0.02]' 
+                      : 'border-slate-100 dark:border-zinc-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${opt.color}`}>
+                      <span className="material-icons-round text-xl">{opt.icon}</span>
+                    </div>
+                    <div className="text-left">
+                      <h4 className={`font-bold text-sm transition-colors ${selectedMethod === opt.id ? 'text-primary dark:text-white' : 'text-slate-900 dark:text-slate-200'}`}>{opt.title}</h4>
+                      <p className="text-[10px] text-slate-400 font-bold">{opt.desc}</p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <h4 className={`font-bold text-sm transition-colors ${selectedMethod === opt.id ? 'text-primary dark:text-white' : 'text-slate-900 dark:text-slate-200'}`}>{opt.title}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold">{opt.desc}</p>
+                  {selectedMethod === opt.id ? (
+                    <span className="material-icons-round text-primary text-xl">check_circle</span>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-slate-100 dark:border-zinc-700 group-hover:border-slate-200"></div>
+                  )}
+                </button>
+
+                {/* Sub-menu for Card selection */}
+                {selectedMethod === PaymentMethod.CARD && opt.id === PaymentMethod.CARD && (
+                  <div className="pl-4 pr-2 space-y-2 py-2 animate-in slide-in-from-top-4 duration-300">
+                    {savedCards.length > 0 ? (
+                      savedCards.map(card => (
+                        <button
+                          key={card.id}
+                          onClick={() => setSelectedCardId(card.id)}
+                          className={`w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                            selectedCardId === card.id 
+                              ? 'bg-primary/5 border-primary/30' 
+                              : 'bg-slate-50 dark:bg-zinc-800 border-slate-100 dark:border-zinc-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="material-icons-round text-slate-400 text-sm">credit_card</span>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{card.cardNumber}</span>
+                          </div>
+                          {selectedCardId === card.id && <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>}
+                        </button>
+                      ))
+                    ) : (
+                      <button 
+                        onClick={() => navigate('/account/payment')}
+                        className="w-full p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-800 text-slate-400 text-xs font-bold flex items-center justify-center gap-2"
+                      >
+                        <span className="material-icons-round text-sm">add</span>
+                        Add a card to continue
+                      </button>
+                    )}
                   </div>
-                </div>
-                {selectedMethod === opt.id ? (
-                  <span className="material-icons-round text-primary text-xl">check_circle</span>
-                ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-slate-100 dark:border-zinc-700 group-hover:border-slate-200"></div>
                 )}
-              </button>
+              </div>
             ))}
           </div>
         </section>
@@ -188,7 +248,14 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
 
       <div className="p-6 ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 sticky bottom-0 z-20">
         <button 
-          onClick={() => onCheckout(selectedMethod)}
+          onClick={() => {
+            if (selectedMethod === PaymentMethod.CARD && savedCards.length === 0) {
+              alert("Please add a payment card first.");
+              navigate('/account/payment');
+              return;
+            }
+            onCheckout(selectedMethod, selectedMethod === PaymentMethod.CARD ? selectedCardId : undefined);
+          }}
           className="w-full bg-primary hover:bg-opacity-90 transition-all text-white font-black py-4 rounded-2xl shadow-2xl shadow-primary/30 flex items-center justify-center space-x-3 active:scale-[0.98]"
         >
           <span className="material-icons-round">payment</span>

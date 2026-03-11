@@ -47,6 +47,7 @@ export interface Order {
   total: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
+  cardId?: string;
   timestamp: string;
   prepTime?: number; // estimated prep minutes (max across all items)
   estimatedCompletion?: string;
