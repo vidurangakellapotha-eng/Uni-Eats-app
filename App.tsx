@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { UserRole, Order, MenuItem, OrderStatus, PaymentMethod } from './types';
 import { MENU_ITEMS } from './constants';
@@ -29,11 +29,37 @@ import RateOrderPage from './pages/RateOrder';
 
 const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<{ role: UserRole; id: string; name: string } | null>(null);
-  const [authLoading, setAuthLoading] = useState(true); // Wait for Firebase to restore auth
+  const [authLoading, setAuthLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [toast, setToast] = useState<{ msg: string; icon: string; color: string } | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const prevOrderStatusRef = useRef<string | null>(null);
+
+  // Helper: write a notification to Firestore + show toast
+  const pushNotification = async (
+    userId: string,
+    title: string,
+    message: string,
+    type: string,
+    icon: string,
+    color: string,
+    orderId?: string
+  ) => {
+    // Toast
+    setToast({ msg: title, icon, color });
+    setTimeout(() => setToast(null), 4000);
+    setUnreadCount(c => c + 1);
+    // Firestore
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        userId, title, message, type, orderId: orderId || '', read: false,
+        createdAt: serverTimestamp(),
+      });
+    } catch (_) { /* silently fail */ }
+  };
 
   const navigate = useNavigate();
 
@@ -73,18 +99,35 @@ const AppContent: React.FC = () => {
       const fetched: Order[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       setOrders(fetched);
 
-      // Keep activeOrder in sync when admin updates status
       const savedOrderId = localStorage.getItem('unieats_active_order_id');
       if (savedOrderId) {
         const savedOrder = fetched.find(o => o.id === savedOrderId);
         if (savedOrder) {
-          if (savedOrder.status === OrderStatus.COMPLETED) {
-            // Save full order for the rating page then navigate directly
+          const prevStatus = prevOrderStatusRef.current;
+          const newStatus = savedOrder.status;
+          const shortId = savedOrder.id.slice(-6).toUpperCase();
+
+          // Detect status change and send notification
+          if (prevStatus !== null && prevStatus !== newStatus) {
+            const userId = savedOrder.userId;
+            if (newStatus === OrderStatus.PREPARING) {
+              pushNotification(userId, '👨‍🍳 Being Prepared!', `Order #${shortId} is now being prepared by the kitchen.`, 'order', 'restaurant', '#F59E0B', savedOrder.id);
+            } else if (newStatus === OrderStatus.READY) {
+              pushNotification(userId, '🛍 Ready for Pickup!', `Order #${shortId} is ready! Head to the counter now.`, 'ready', 'shopping_bag', '#10B981', savedOrder.id);
+            } else if (newStatus === OrderStatus.COMPLETED) {
+              pushNotification(userId, '✅ Order Completed!', `Order #${shortId} has been collected. Rate your meal!`, 'completed', 'check_circle', '#6366F1', savedOrder.id);
+            } else if (newStatus === OrderStatus.REJECTED) {
+              pushNotification(userId, '❌ Order Rejected', `Sorry, order #${shortId} was rejected by the kitchen.`, 'alert', 'cancel', '#EF4444', savedOrder.id);
+            }
+          }
+          prevOrderStatusRef.current = newStatus;
+
+          if (newStatus === OrderStatus.COMPLETED) {
             localStorage.setItem('unieats_rating_order', JSON.stringify(savedOrder));
             localStorage.removeItem('unieats_active_order_id');
             setActiveOrder(null);
             navigate('/rate-order');
-          } else if (savedOrder.status === OrderStatus.REJECTED) {
+          } else if (newStatus === OrderStatus.REJECTED) {
             localStorage.removeItem('unieats_active_order_id');
             setActiveOrder(null);
           } else {
@@ -122,11 +165,9 @@ const AppContent: React.FC = () => {
   }, []);
 
   const handleLogin = (role: UserRole, id: string, name: string) => {
-    // currentUser is set by onAuthStateChanged automatically from Firebase auth
-    // Just navigate — Firebase listener will have already set currentUser or will shortly
     setCurrentUser({ role: UserRole.STUDENT, id, name });
+    localStorage.setItem('unieats_user_id', id); // Store for Notifications page
     const savedOrderId = localStorage.getItem('unieats_active_order_id');
-    // Use setTimeout(0) to let React commit state before navigate runs route guards
     setTimeout(() => {
       navigate(savedOrderId ? '/order-status' : '/menu');
     }, 0);
@@ -187,11 +228,20 @@ const AppContent: React.FC = () => {
 
     try {
       const docRef = await addDoc(collection(db, 'orders'), newOrderData);
-      // Save orderId to localStorage so it persists across logout/refresh
       localStorage.setItem('unieats_active_order_id', docRef.id);
+      prevOrderStatusRef.current = OrderStatus.PLACED; // Set initial status for tracking
       const tempOrder: Order = { id: docRef.id, ...newOrderData } as Order;
       setActiveOrder(tempOrder);
       setCart({});
+      // Notify: order placed
+      if (currentUser) {
+        pushNotification(
+          currentUser.id,
+          '🧾 Order Placed!',
+          `Your order #${docRef.id.slice(-6).toUpperCase()} has been received. We'll notify you when it's being prepared.`,
+          'order', 'receipt_long', '#78350F', docRef.id
+        );
+      }
       navigate('/order-status');
     } catch (err) {
       console.error('Failed to place order:', err);
@@ -230,7 +280,30 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <Routes>
+    <>
+      {/* Toast Notification Overlay */}
+      {toast && (
+        <div
+          style={{
+            position: 'fixed', top: '60px', left: '50%', transform: 'translateX(-50%)',
+            zIndex: 9999, maxWidth: '380px', width: '90%',
+            background: 'white', borderRadius: '16px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            padding: '14px 18px',
+            display: 'flex', alignItems: 'center', gap: '12px',
+            borderLeft: `4px solid ${toast.color}`,
+            animation: 'slideDown 0.3s ease'
+          }}
+        >
+          <span className="material-icons-round" style={{ color: toast.color, fontSize: '22px' }}>{toast.icon}</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b', flex: 1 }}>{toast.msg}</span>
+          <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+            <span className="material-icons-round" style={{ fontSize: '18px' }}>close</span>
+          </button>
+        </div>
+      )}
+      <style>{`@keyframes slideDown { from { opacity:0; transform:translateX(-50%) translateY(-16px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`}</style>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login onLogin={handleLogin} />} />
       <Route path="/forgot-pin" element={<ForgotPin />} />
@@ -257,7 +330,7 @@ const AppContent: React.FC = () => {
       <Route
         path="/menu"
         element={currentUser?.role === UserRole.STUDENT
-          ? <CustomerMenu menuItems={menuItems} cart={cart} onUpdateCart={updateCart} />
+          ? <CustomerMenu menuItems={menuItems} cart={cart} onUpdateCart={updateCart} unreadCount={unreadCount} onClearUnread={() => setUnreadCount(0)} />
           : <Navigate to="/" />}
       />
       <Route
@@ -294,6 +367,7 @@ const AppContent: React.FC = () => {
 
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
+    </>
   );
 };
 

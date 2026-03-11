@@ -8,9 +8,11 @@ interface CustomerMenuProps {
   cart: Record<string, number>;
   onUpdateCart: (itemId: string, delta: number) => void;
   readOnly?: boolean;
+  unreadCount?: number;
+  onClearUnread?: () => void;
 }
 
-const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCart, readOnly = false }) => {
+const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCart, readOnly = false, unreadCount = 0, onClearUnread }) => {
   const [activeCategory, setActiveCategory] = useState('Breakfast');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -43,11 +45,15 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/notifications')}
+            onClick={() => { onClearUnread?.(); navigate('/notifications'); }}
             className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all relative"
           >
             <span className="material-icons-round text-slate-400 text-xl">notifications</span>
-            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-zinc-900"></span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-zinc-900">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
           <button
             onClick={() => !readOnly && navigate('/cart')}
