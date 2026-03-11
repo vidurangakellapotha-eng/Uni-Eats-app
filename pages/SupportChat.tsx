@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
-import { collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, writeBatch, doc } from 'firebase/firestore';
 
 interface Message {
     id: string;
@@ -56,6 +56,33 @@ const SupportChat: React.FC = () => {
 
         return () => unsubscribe();
     }, [user, navigate]);
+
+    // Automatically mark chat notifications as read when student enters the chat
+    useEffect(() => {
+        if (!user) return;
+
+        const clearNotifications = async () => {
+            const q = query(
+                collection(db, 'notifications'),
+                where('userId', '==', user.uid),
+                where('type', '==', 'chat'),
+                where('read', '==', false)
+            );
+            
+            try {
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    const batch = writeBatch(db);
+                    snap.docs.forEach(d => batch.update(doc(db, 'notifications', d.id), { read: true }));
+                    await batch.commit();
+                }
+            } catch (err) {
+                console.error("Error clearing chat notifications:", err);
+            }
+        };
+
+        clearNotifications();
+    }, [user]);
 
     useEffect(() => {
         if (scrollRef.current) {

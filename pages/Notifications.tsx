@@ -23,6 +23,7 @@ const typeStyles: Record<string, { bg: string; text: string; border: string }> =
   alert:     { bg: 'bg-red-50 dark:bg-red-900/20',       text: 'text-red-700 dark:text-red-400',      border: 'border-red-200 dark:border-red-800' },
   promo:     { bg: 'bg-gradient-to-r from-orange-50 to-rose-50 dark:from-orange-950/20 dark:to-rose-950/20', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-900/50' },
   news:      { bg: 'bg-blue-50 dark:bg-blue-900/20',     text: 'text-blue-700 dark:text-blue-400',    border: 'border-blue-200 dark:border-blue-800' },
+  chat:      { bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-indigo-200 dark:border-indigo-800' },
 };
 
 const iconForType: Record<string, string> = {
@@ -88,8 +89,11 @@ const Notifications: React.FC<NotificationsProps> = ({ userId: propUserId }) => 
     await batch.commit().catch(() => {});
   };
 
-  const markRead = async (id: string) => {
-    await updateDoc(doc(db, 'notifications', id), { read: true }).catch(() => {});
+  const handleNotificationClick = async (notif: AppNotification) => {
+    await updateDoc(doc(db, 'notifications', notif.id), { read: true }).catch(() => {});
+    if (notif.type === 'chat') {
+      navigate('/account/support/chat');
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -152,7 +156,7 @@ const Notifications: React.FC<NotificationsProps> = ({ userId: propUserId }) => 
             return (
               <button
                 key={notif.id}
-                onClick={() => markRead(notif.id)}
+                onClick={() => handleNotificationClick(notif)}
                 className={`w-full text-left p-4 rounded-[20px] border transition-all active:scale-[0.98] ${
                   notif.read
                     ? 'bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800'

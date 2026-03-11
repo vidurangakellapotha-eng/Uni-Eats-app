@@ -60,20 +60,52 @@ const AppContent: React.FC = () => {
       });
     } catch (_) { /* silently fail */ }
   };
-
-  // Subscribe to unread notification count from Firestore for the bell badge
+  // Subscribe to real-time notifications for the bell badge and toast alerts
+  const [lastNotifId, setLastNotifId] = useState<string | null>(null);
   useEffect(() => {
     if (!currentUser) { setUnreadCount(0); return; }
-    // Fetch both personal notifications AND global broadcasts ('all')
-    const q = query(collection(db, 'notifications'), where('userId', 'in', [currentUser.id, 'all']));
+    
+    // Removed orderBy to avoid requiring a composite index in Firestore
+    const q = query(
+      collection(db, 'notifications'), 
+      where('userId', 'in', [currentUser.id, 'all'])
+    );
+    
     const unsubscribe = onSnapshot(q, (snap) => {
-      const count = snap.docs.filter(d => d.data().read === false).length;
-      setUnreadCount(count);
+      if (snap.empty) {
+        setUnreadCount(0);
+        return;
+      }
+
+      // Sort in-memory to find the newest arrival
+      const docs = [...snap.docs].sort((a,b) => (b.data().createdAt?.toMillis() || 0) - (a.data().createdAt?.toMillis() || 0));
+
+      // 1. Update the unread badge count
+      const unread = docs.filter(d => d.data().read === false).length;
+      setUnreadCount(unread);
+
+      // 2. Detect NEW arrivals for toast alerts
+      const newestDoc = docs[0];
+      const data = newestDoc.data();
+      
+      // Only show toast if it's unread AND we haven't toasted this ID yet
+      // Also ensure it's "fresh" (created recently) to avoid toasting old history on load
+      const isFresh = data.createdAt && (Date.now() - data.createdAt.toMillis() < 5000);
+      
+      if (data.read === false && isFresh && newestDoc.id !== lastNotifId) {
+        setLastNotifId(newestDoc.id);
+        setToast({ 
+          msg: data.title, 
+          icon: data.icon || 'notifications', 
+          color: data.color || '#6366F1' 
+        });
+        setTimeout(() => setToast(null), 4000);
+      }
     }, (err) => {
-        console.error("Unread count listener error:", err);
+      console.error("Notifications listener error:", err);
     });
     return () => unsubscribe();
-  }, [currentUser?.id]);
+  }, [currentUser?.id, lastNotifId]);
 
   const navigate = useNavigate();
 
