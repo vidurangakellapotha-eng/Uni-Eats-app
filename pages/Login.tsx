@@ -27,12 +27,22 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setLoading(true);
 
     try {
+      // 1. Domain Validation
+      const emailLower = email.toLowerCase().trim();
+      const isAdminEmail = emailLower === 'vidurangakellapotha@gmail.com'; // Allow owner bypass for testing if needed
+      
+      if (!emailLower.endsWith('@student.nibm.lk') && !isAdminEmail) {
+        setError('Access Denied: Please use your official university email (@student.nibm.lk) to access Uni Eats.');
+        setLoading(false);
+        return;
+      }
+
       if (isSignUp) {
         // Create new account
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
         
-        // 1. Tag as student in Firestore 'users' collection
+        // Tag as student in Firestore 'users' collection
         await setDoc(doc(db, 'users', userCredential.user.uid), {
           id: userCredential.user.uid,
           name: displayName,
@@ -53,7 +63,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         // Sign in
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         
-        // 2. Security Check: Is this an admin trying to enter the student app?
+        // Security Check: Is this an admin trying to enter the student app?
         const adminDoc = await getDoc(doc(db, 'admins', userCredential.user.uid));
         if (adminDoc.exists()) {
           await signOut(auth); // Kick them out
@@ -144,7 +154,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@university.edu"
+                    placeholder="your-id@student.nibm.lk"
                   className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-zinc-800 border-none ring-1 ring-slate-200 dark:ring-zinc-700 focus:ring-2 focus:ring-primary rounded-2xl text-slate-900 dark:text-white transition-all outline-none"
                   required
                 />
