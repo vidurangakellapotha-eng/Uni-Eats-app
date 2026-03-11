@@ -28,16 +28,12 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
     if (!savedOrderId) return;
 
     setLoading(true);
-    // Subscribe to the specific order document for real-time updates
     const unsubscribe = onSnapshot(doc(db, 'orders', savedOrderId), (docSnap) => {
       if (docSnap.exists()) {
         const fetchedOrder = { id: docSnap.id, ...docSnap.data() } as Order;
         setOrder(fetchedOrder);
-        if (fetchedOrder.status === OrderStatus.COMPLETED) {
-          // Store order data for rating page, don't clear localStorage yet
-          localStorage.setItem('unieats_rating_order', JSON.stringify(fetchedOrder));
-          navigate('/rate-order');
-        } else if (fetchedOrder.status === OrderStatus.REJECTED) {
+        // App.tsx handles COMPLETED → /rate-order. Just handle REJECTED here.
+        if (fetchedOrder.status === OrderStatus.REJECTED) {
           localStorage.removeItem('unieats_active_order_id');
         }
       } else {
@@ -50,16 +46,9 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
     return () => unsubscribe();
   }, [propOrder]);
 
-  // Keep in sync when parent updates propOrder (real-time status changes)
+  // Keep in sync when parent updates propOrder
   useEffect(() => {
-    if (!propOrder) return;
-    setOrder(propOrder);
-    if (propOrder.status === OrderStatus.COMPLETED) {
-      localStorage.setItem('unieats_rating_order', JSON.stringify(propOrder));
-      navigate('/rate-order');
-    } else if (propOrder.status === OrderStatus.REJECTED) {
-      localStorage.removeItem('unieats_active_order_id');
-    }
+    if (propOrder) setOrder(propOrder);
   }, [propOrder]);
 
   if (loading) {

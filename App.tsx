@@ -78,7 +78,13 @@ const AppContent: React.FC = () => {
       if (savedOrderId) {
         const savedOrder = fetched.find(o => o.id === savedOrderId);
         if (savedOrder) {
-          if (savedOrder.status === OrderStatus.COMPLETED || savedOrder.status === OrderStatus.REJECTED) {
+          if (savedOrder.status === OrderStatus.COMPLETED) {
+            // Save full order for the rating page then navigate directly
+            localStorage.setItem('unieats_rating_order', JSON.stringify(savedOrder));
+            localStorage.removeItem('unieats_active_order_id');
+            setActiveOrder(null);
+            navigate('/rate-order');
+          } else if (savedOrder.status === OrderStatus.REJECTED) {
             localStorage.removeItem('unieats_active_order_id');
             setActiveOrder(null);
           } else {
@@ -97,6 +103,7 @@ const AppContent: React.FC = () => {
     });
     return () => unsubscribe();
   }, []);
+
 
   // --- Try to fetch menu from Firestore, fallback to constants ---
   useEffect(() => {
