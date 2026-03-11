@@ -21,6 +21,8 @@ const typeStyles: Record<string, { bg: string; text: string; border: string }> =
   ready:     { bg: 'bg-green-50 dark:bg-green-900/20',   text: 'text-green-700 dark:text-green-400',  border: 'border-green-200 dark:border-green-800' },
   completed: { bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-indigo-200 dark:border-indigo-800' },
   alert:     { bg: 'bg-red-50 dark:bg-red-900/20',       text: 'text-red-700 dark:text-red-400',      border: 'border-red-200 dark:border-red-800' },
+  promo:     { bg: 'bg-gradient-to-r from-orange-50 to-rose-50 dark:from-orange-950/20 dark:to-rose-950/20', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-900/50' },
+  news:      { bg: 'bg-blue-50 dark:bg-blue-900/20',     text: 'text-blue-700 dark:text-blue-400',    border: 'border-blue-200 dark:border-blue-800' },
 };
 
 const iconForType: Record<string, string> = {
@@ -28,6 +30,8 @@ const iconForType: Record<string, string> = {
   ready:     'shopping_bag',
   completed: 'check_circle',
   alert:     'cancel',
+  promo:     'campaign',
+  news:      'info',
 };
 
 function timeAgo(seconds: number): string {
@@ -60,8 +64,8 @@ const Notifications: React.FC<NotificationsProps> = ({ userId: propUserId }) => 
     }
 
     setLoading(true);
-    // Query notifications for this user (client-side sort to avoid composite index)
-    const q = query(collection(db, 'notifications'), where('userId', '==', userId));
+    // Query notifications for this user OR global ones ('all')
+    const q = query(collection(db, 'notifications'), where('userId', 'in', [userId, 'all']));
     const unsubscribe = onSnapshot(q, (snap) => {
       const data: AppNotification[] = snap.docs
         .map(d => ({ id: d.id, ...d.data() } as AppNotification))

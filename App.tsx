@@ -63,11 +63,14 @@ const AppContent: React.FC = () => {
   // Subscribe to unread notification count from Firestore for the bell badge
   useEffect(() => {
     if (!currentUser) { setUnreadCount(0); return; }
-    const q = query(collection(db, 'notifications'), where('userId', '==', currentUser.id));
+    // Fetch both personal notifications AND global broadcasts ('all')
+    const q = query(collection(db, 'notifications'), where('userId', 'in', [currentUser.id, 'all']));
     const unsubscribe = onSnapshot(q, (snap) => {
       const count = snap.docs.filter(d => d.data().read === false).length;
       setUnreadCount(count);
-    }, () => {});
+    }, (err) => {
+        console.error("Unread count listener error:", err);
+    });
     return () => unsubscribe();
   }, [currentUser?.id]);
 
