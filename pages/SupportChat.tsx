@@ -104,12 +104,27 @@ const SupportChat: React.FC = () => {
                 senderId: user.uid,
                 senderName: user.displayName || 'Student',
                 isAdmin: false,
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                read: false // Mark student message as unread for admin
             });
         } catch (err) {
             console.error("Error sending message:", err);
         }
     };
+
+    // Update messages to be marked as read when the student is in the chat
+    useEffect(() => {
+        if (!user || messages.length === 0) return;
+
+        const unreadAdminMsgs = messages.filter(m => m.isAdmin && !m.read);
+        if (unreadAdminMsgs.length > 0) {
+            const batch = writeBatch(db);
+            unreadAdminMsgs.forEach(m => {
+                batch.update(doc(db, 'supportMessages', m.id), { read: true });
+            });
+            batch.commit().catch(err => console.error("Error marking messages read:", err));
+        }
+    }, [user, messages]);
 
     return (
         <div className="flex flex-col h-screen bg-white dark:bg-zinc-950">

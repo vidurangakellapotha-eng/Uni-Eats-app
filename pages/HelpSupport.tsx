@@ -1,9 +1,29 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db, auth } from '../firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 const HelpSupport: React.FC = () => {
     const navigate = useNavigate();
+    const [hasUnreadChat, setHasUnreadChat] = useState(false);
+    const user = auth.currentUser;
+
+    useEffect(() => {
+        if (!user) return;
+        
+        const q = query(
+            collection(db, 'supportMessages'),
+            where('chatId', '==', user.uid),
+            where('isAdmin', '==', true),
+            where('read', '==', false)
+        );
+
+        const unsubscribe = onSnapshot(q, (snap) => {
+            setHasUnreadChat(!snap.empty);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
 
     const faqs = [
         { q: "How do I top up my credits?", a: "Visit the main administration office or use the online portal to add funds to your student ID." },
@@ -38,8 +58,11 @@ const HelpSupport: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <button 
                         onClick={() => navigate('/account/support/chat')}
-                        className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-sm flex flex-col items-center gap-3 active:scale-95 hover:border-primary/30 transition-all group"
+                        className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-sm flex flex-col items-center gap-3 active:scale-95 hover:border-primary/30 transition-all group relative"
                     >
+                        {hasUnreadChat && (
+                            <div className="absolute top-4 right-4 w-3 h-3 bg-red-500 rounded-full animate-pulse ring-4 ring-red-500/20 shadow-lg shadow-red-500/30"></div>
+                        )}
                         <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <span className="material-icons-round">chat</span>
                         </div>

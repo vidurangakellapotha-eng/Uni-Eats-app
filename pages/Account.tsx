@@ -1,7 +1,8 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
+import { db } from '../firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 interface AccountProps {
   user: { role: UserRole; id: string; name: string; photoURL?: string };
@@ -10,6 +11,25 @@ interface AccountProps {
 
 const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
   const navigate = useNavigate();
+  const [hasUnreadChat, setHasUnreadChat] = useState(false);
+
+  useEffect(() => {
+    if (!user.id) return;
+    
+    // Check for unread support replies from admin
+    const q = query(
+      collection(db, 'supportMessages'),
+      where('chatId', '==', user.id),
+      where('isAdmin', '==', true),
+      where('read', '==', false)
+    );
+
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setHasUnreadChat(!snap.empty);
+    });
+
+    return () => unsubscribe();
+  }, [user.id]);
 
   const settingsOptions = [
     { icon: 'person_outline', label: 'Personal Information', desc: 'Manage your profile details', path: '/account/profile' },
@@ -17,7 +37,7 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
     { icon: 'history', label: 'Order History', desc: 'Review your past delicious meals', path: '/account/history' },
     { icon: 'notifications_none', label: 'Notification Settings', desc: 'Manage alerts and push messages', path: '/account/notifications' },
     { icon: 'security', label: 'Privacy & Security', desc: 'Password and biometric settings', path: '/account/privacy' },
-    { icon: 'help_outline', label: 'Help & Support', desc: 'FAQs and cafeteria contact info', path: '/account/support' },
+    { icon: 'help_outline', label: 'Help & Support', desc: 'FAQs and cafeteria contact info', path: '/account/support', hasBadge: hasUnreadChat },
   ];
 
   const handleBack = () => {
@@ -28,8 +48,8 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-zinc-950">
       {/* iOS Status Bar */}
       <div className="px-8 pt-10 pb-2 flex justify-between items-center w-full">
-        <span className="text-sm font-semibold">9:41</span>
-        <div className="flex items-center space-x-1.5">
+        <span className="text-sm font-semibold text-slate-900 dark:text-white">9:41</span>
+        <div className="flex items-center space-x-1.5 text-slate-900 dark:text-white">
           <span className="material-icons-round text-sm">signal_cellular_alt</span>
           <span className="material-icons-round text-sm">wifi</span>
           <span className="material-icons-round text-sm">battery_full</span>
@@ -46,7 +66,7 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
         <h1 className="text-xl font-bold text-slate-900 dark:text-white">Profile Settings</h1>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-6 py-4 pb-24 hide-scrollbar space-y-6">
+      <main className="flex-1 overflow-y-auto px-6 py-4 pb-24 hide-scrollbar space-y-6 text-slate-900 dark:text-white">
         {/* Profile Card */}
         <div className="bg-white dark:bg-zinc-900 rounded-[32px] p-6 shadow-sm border border-slate-100 dark:border-zinc-800 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-24 bg-primary/5 dark:bg-primary/20 -z-0"></div>
@@ -60,22 +80,7 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
             </div>
             <h2 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">{user.name}</h2>
             <p className="text-sm font-bold text-primary dark:text-amber-500 uppercase tracking-widest">{user.role} • {user.id}</p>
-            <div className="mt-4 flex gap-2">
-              <span className="px-3 py-1 bg-slate-100 dark:bg-zinc-800 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-widest">NIBM Central</span>
-              <span className="px-3 py-1 bg-slate-100 dark:bg-zinc-800 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-widest">Year 2</span>
-            </div>
           </div>
-        </div>
-
-        {/* Campus Credits Card */}
-        <div className="bg-primary text-white rounded-[32px] p-6 shadow-xl shadow-primary/20 flex justify-between items-center">
-          <div>
-            <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Campus Credits</p>
-            <h3 className="text-3xl font-black">LKR 4,250.00</h3>
-          </div>
-          <button className="w-12 h-12 rounded-2xl bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur-md transition-all">
-            <span className="material-icons-round">add</span>
-          </button>
         </div>
 
         {/* Settings List */}
@@ -86,7 +91,7 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
               <button
                 key={i}
                 onClick={() => opt.path ? navigate(opt.path) : null}
-                className="w-full flex items-center justify-between p-5 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors group"
+                className="w-full flex items-center justify-between p-5 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors group relative"
               >
                 <div className="flex items-center gap-4 text-left">
                   <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 group-hover:text-primary transition-colors">
@@ -97,7 +102,12 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
                     <p className="text-xs text-slate-400">{opt.desc}</p>
                   </div>
                 </div>
-                <span className="material-icons-round text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>
+                <div className="flex items-center gap-2">
+                  {opt.hasBadge && (
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse ring-4 ring-red-500/20"></div>
+                  )}
+                  <span className="material-icons-round text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>
+                </div>
               </button>
             ))}
           </div>
@@ -111,12 +121,8 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
             className="w-full bg-red-50 dark:bg-red-950/20 text-red-600 font-black py-5 rounded-[32px] flex items-center justify-center gap-3 border border-red-100 dark:border-red-900/30 active:scale-95 transition-all"
           >
             <span className="material-icons-round">logout</span>
-            Sign Out from Uni Eats
+            Sign Out
           </button>
-        </div>
-
-        <div className="text-center pt-4">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Version 2.4.1 (Stable Build)</p>
         </div>
       </main>
 
@@ -124,15 +130,15 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
       {user.role === UserRole.STUDENT && (
         <nav className="ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 px-10 pt-4 pb-8 flex justify-between items-center sticky bottom-0">
           <button onClick={() => navigate('/menu')} className="flex flex-col items-center gap-1 text-slate-400">
-            <span className="material-icons-round">restaurant_menu</span>
+            <span className="material-icons-round text-slate-400">restaurant_menu</span>
             <span className="text-[10px] font-medium">Menu</span>
           </button>
           <button onClick={() => navigate('/order-status')} className="flex flex-col items-center gap-1 text-slate-400">
-            <span className="material-icons-round">receipt_long</span>
+            <span className="material-icons-round text-slate-400">receipt_long</span>
             <span className="text-[10px] font-medium">Orders</span>
           </button>
           <button className="flex flex-col items-center gap-1 text-primary">
-            <span className="material-icons-round">person</span>
+            <span className="material-icons-round text-primary">person</span>
             <span className="text-[10px] font-bold">Account</span>
           </button>
         </nav>
