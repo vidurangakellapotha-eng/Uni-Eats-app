@@ -62,49 +62,56 @@ const AppContent: React.FC = () => {
   };
   // Subscribe to real-time notifications for the bell badge and toast alerts
   const [lastNotifId, setLastNotifId] = useState<string | null>(null);
+  const [hasUnreadChat, setHasUnreadChat] = useState(false);
+  
   useEffect(() => {
-    if (!currentUser) { setUnreadCount(0); return; }
+    if (!currentUser) { 
+      setUnreadCount(0); 
+      setHasUnreadChat(false);
+      return; 
+    }
     
-    // Removed orderBy to avoid requiring a composite index in Firestore
-    const q = query(
+    // 1. Regular notifications (orders, promos, etc)
+    const qNotifs = query(
       collection(db, 'notifications'), 
       where('userId', 'in', [currentUser.id, 'all'])
     );
     
-    const unsubscribe = onSnapshot(q, (snap) => {
+    const unsubNotifs = onSnapshot(qNotifs, (snap) => {
       if (snap.empty) {
         setUnreadCount(0);
-        return;
+      } else {
+        const docs = [...snap.docs].sort((a,b) => (b.data().createdAt?.toMillis() || 0) - (a.data().createdAt?.toMillis() || 0));
+        setUnreadCount(docs.filter(d => d.data().read === false).length);
+
+        const newestDoc = docs[0];
+        const data = newestDoc.data();
+        const isFresh = data.createdAt && (Date.now() - data.createdAt.toMillis() < 5000);
+        
+        if (data.read === false && isFresh && newestDoc.id !== lastNotifId) {
+          setLastNotifId(newestDoc.id);
+          setToast({ msg: data.title, icon: data.icon || 'notifications', color: data.color || '#6366F1' });
+          setTimeout(() => setToast(null), 4000);
+        }
       }
-
-      // Sort in-memory to find the newest arrival
-      const docs = [...snap.docs].sort((a,b) => (b.data().createdAt?.toMillis() || 0) - (a.data().createdAt?.toMillis() || 0));
-
-      // 1. Update the unread badge count
-      const unread = docs.filter(d => d.data().read === false).length;
-      setUnreadCount(unread);
-
-      // 2. Detect NEW arrivals for toast alerts
-      const newestDoc = docs[0];
-      const data = newestDoc.data();
-      
-      // Only show toast if it's unread AND we haven't toasted this ID yet
-      // Also ensure it's "fresh" (created recently) to avoid toasting old history on load
-      const isFresh = data.createdAt && (Date.now() - data.createdAt.toMillis() < 5000);
-      
-      if (data.read === false && isFresh && newestDoc.id !== lastNotifId) {
-        setLastNotifId(newestDoc.id);
-        setToast({ 
-          msg: data.title, 
-          icon: data.icon || 'notifications', 
-          color: data.color || '#6366F1' 
-        });
-        setTimeout(() => setToast(null), 4000);
-      }
-    }, (err) => {
-      console.error("Notifications listener error:", err);
     });
-    return () => unsubscribe();
+
+    // 2. Unread Support Messages Dot Tracker
+    const qChat = query(
+      collection(db, 'supportMessages'),
+      where('chatId', '==', currentUser.id),
+      where('isAdmin', '==', true),
+      where('read', '==', false)
+    );
+
+    const unsubChat = onSnapshot(qChat, (snap) => {
+      setHasUnreadChat(!snap.empty);
+    });
+
+    return () => {
+      unsubNotifs();
+      unsubChat();
+    };
   }, [currentUser?.id, lastNotifId]);
 
   const navigate = useNavigate();
@@ -385,7 +392,7 @@ const AppContent: React.FC = () => {
       <Route
         path="/menu"
         element={currentUser?.role === UserRole.STUDENT
-          ? <CustomerMenu menuItems={menuItems} cart={cart} onUpdateCart={updateCart} unreadCount={unreadCount} onClearUnread={() => setUnreadCount(0)} />
+          ? <CustomerMenu menuItems={menuItems} cart={cart} onUpdateCart={updateCart} unreadCount={unreadCount} onClearUnread={() => setUnreadCount(0)} hasUnreadSupport={hasUnreadChat} />
           : <Navigate to="/" />}
       />
       <Route

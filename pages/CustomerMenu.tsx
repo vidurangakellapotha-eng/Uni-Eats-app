@@ -10,9 +10,10 @@ interface CustomerMenuProps {
   readOnly?: boolean;
   unreadCount?: number;
   onClearUnread?: () => void;
+  hasUnreadSupport?: boolean;
 }
 
-const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCart, readOnly = false, unreadCount = 0, onClearUnread }) => {
+const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCart, readOnly = false, unreadCount = 0, onClearUnread, hasUnreadSupport = false }) => {
   const [activeCategory, setActiveCategory] = useState('Breakfast');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -182,9 +183,12 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
             <span className="material-icons-round">receipt_long</span>
             <span className="text-[10px] font-bold uppercase tracking-widest">Orders</span>
           </button>
-          <button onClick={() => navigate('/account')} className="flex flex-col items-center gap-1 text-slate-400">
+          <button onClick={() => navigate('/account')} className="flex flex-col items-center gap-1 text-slate-400 relative">
             <span className="material-icons-round">person</span>
             <span className="text-[10px] font-bold uppercase tracking-widest">Account</span>
+            {hasUnreadSupport && (
+              <span className="absolute top-0 right-1/4 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900 animate-pulse"></span>
+            )}
           </button>
         </nav>
       )}

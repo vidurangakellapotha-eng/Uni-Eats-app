@@ -137,9 +137,12 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
             <span className="material-icons-round text-slate-400">receipt_long</span>
             <span className="text-[10px] font-medium">Orders</span>
           </button>
-          <button className="flex flex-col items-center gap-1 text-primary">
+          <button className="flex flex-col items-center gap-1 text-primary relative">
             <span className="material-icons-round text-primary">person</span>
             <span className="text-[10px] font-bold">Account</span>
+            {hasUnreadChat && (
+              <span className="absolute top-0 right-1/4 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900 animate-pulse"></span>
+            )}
           </button>
         </nav>
       )}
