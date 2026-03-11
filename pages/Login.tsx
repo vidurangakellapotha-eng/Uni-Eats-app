@@ -3,7 +3,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface LoginProps {
   onLogin: (role: UserRole, id: string, name: string) => void;
@@ -29,10 +31,37 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         // Create new account
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
+        
+        // 1. Tag as student in Firestore 'users' collection
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          id: userCredential.user.uid,
+          name: displayName,
+          email: email,
+          role: 'student',
+          userType: 'Student',
+          createdAt: serverTimestamp(),
+          notificationSettings: {
+            orderUpdates: true,
+            promotions: true,
+            cafeteriaNews: true,
+            emailDigest: false,
+          }
+        });
+
         onLogin(UserRole.STUDENT, userCredential.user.uid, displayName);
       } else {
         // Sign in
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        // 2. Security Check: Is this an admin trying to enter the student app?
+        const adminDoc = await getDoc(doc(db, 'admins', userCredential.user.uid));
+        if (adminDoc.exists()) {
+          await signOut(auth); // Kick them out
+          setError('Access Denied: Admin accounts cannot log in to the Student App. Please use the Admin Dashboard.');
+          setLoading(false);
+          return;
+        }
+
         const name = userCredential.user.displayName || userCredential.user.email || 'Student';
         onLogin(UserRole.STUDENT, userCredential.user.uid, name);
       }

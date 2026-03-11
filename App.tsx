@@ -5,7 +5,7 @@ import { UserRole, Order, MenuItem, OrderStatus, PaymentMethod } from './types';
 import { MENU_ITEMS } from './constants';
 import { db, auth } from './firebase';
 import {
-  collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy, where
+  collection, addDoc, onSnapshot, updateDoc, doc, getDocs, getDoc, serverTimestamp, query, orderBy, where
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
@@ -118,8 +118,18 @@ const AppContent: React.FC = () => {
 
   // --- Firebase Auth listener: auto-restores session after refresh/re-login ---
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser && !firebaseUser.isAnonymous) {
+        // Security check: If they are an admin, they shouldn't be here
+        const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
+        if (adminDoc.exists()) {
+          console.warn("Admin detected on student app. Signing out.");
+          await signOut(auth);
+          setCurrentUser(null);
+          setAuthLoading(false);
+          return;
+        }
+
         // Real authenticated user — restore session automatically
         const name = firebaseUser.displayName || firebaseUser.email || 'Student';
         setCurrentUser({ 
