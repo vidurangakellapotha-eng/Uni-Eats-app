@@ -5,7 +5,7 @@ import { UserRole, Order, MenuItem, OrderStatus, PaymentMethod } from './types';
 import { MENU_ITEMS } from './constants';
 import { db, auth } from './firebase';
 import {
-  collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy
+  collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy, where
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
@@ -48,11 +48,10 @@ const AppContent: React.FC = () => {
     color: string,
     orderId?: string
   ) => {
-    // Toast
+    // Show toast
     setToast({ msg: title, icon, color });
     setTimeout(() => setToast(null), 4000);
-    setUnreadCount(c => c + 1);
-    // Firestore
+    // Write to Firestore (unreadCount updates automatically via subscription below)
     try {
       await addDoc(collection(db, 'notifications'), {
         userId, title, message, type, orderId: orderId || '', read: false,
@@ -60,6 +59,17 @@ const AppContent: React.FC = () => {
       });
     } catch (_) { /* silently fail */ }
   };
+
+  // Subscribe to unread notification count from Firestore for the bell badge
+  useEffect(() => {
+    if (!currentUser) { setUnreadCount(0); return; }
+    const q = query(collection(db, 'notifications'), where('userId', '==', currentUser.id));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const count = snap.docs.filter(d => d.data().read === false).length;
+      setUnreadCount(count);
+    }, () => {});
+    return () => unsubscribe();
+  }, [currentUser?.id]);
 
   const navigate = useNavigate();
 
