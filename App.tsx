@@ -7,7 +7,7 @@ import { db, auth } from './firebase';
 import {
   collection, addDoc, onSnapshot, updateDoc, doc, getDocs, serverTimestamp, query, orderBy
 } from 'firebase/firestore';
-import { signInAnonymously } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 // Pages
 import Login from './pages/Login';
@@ -28,6 +28,7 @@ import Notifications from './pages/Notifications';
 
 const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<{ role: UserRole; id: string; name: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true); // Wait for Firebase to restore auth
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
@@ -35,19 +36,34 @@ const AppContent: React.FC = () => {
 
   const navigate = useNavigate();
 
-  // --- Sign in anonymously so Firestore rules allow access ---
+  // --- Firebase Auth listener: auto-restores session after refresh/re-login ---
   useEffect(() => {
-    signInAnonymously(auth).catch(err => console.warn('Anonymous auth failed:', err));
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser && !firebaseUser.isAnonymous) {
+        // Real authenticated user — restore session automatically
+        const name = firebaseUser.displayName || firebaseUser.email || 'Student';
+        setCurrentUser({ role: UserRole.STUDENT, id: firebaseUser.uid, name });
+      } else if (!firebaseUser) {
+        setCurrentUser(null);
+      }
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
-  // --- Navigate to order-status AFTER currentUser state is actually set ---
-  const [pendingNav, setPendingNav] = useState<string | null>(null);
+  // --- After auth restores, navigate to order-status if there's a saved order ---
+  const [navChecked, setNavChecked] = useState(false);
   useEffect(() => {
-    if (currentUser && pendingNav) {
-      navigate(pendingNav);
-      setPendingNav(null);
+    if (!authLoading && !navChecked) {
+      setNavChecked(true);
+      if (currentUser) {
+        const savedOrderId = localStorage.getItem('unieats_active_order_id');
+        if (savedOrderId) {
+          navigate('/order-status');
+        }
+      }
     }
-  }, [currentUser, pendingNav]);
+  }, [authLoading, currentUser, navChecked]);
 
   // --- Real-time orders listener from Firestore ---
   useEffect(() => {
@@ -56,7 +72,7 @@ const AppContent: React.FC = () => {
       const fetched: Order[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       setOrders(fetched);
 
-      // Restore active order from localStorage (survives logout/refresh)
+      // Keep activeOrder in sync when admin updates status
       const savedOrderId = localStorage.getItem('unieats_active_order_id');
       if (savedOrderId) {
         const savedOrder = fetched.find(o => o.id === savedOrderId);
@@ -75,6 +91,8 @@ const AppContent: React.FC = () => {
           return updated ?? prev;
         });
       }
+    }, (err) => {
+      console.warn('Firestore orders listener error:', err);
     });
     return () => unsubscribe();
   }, []);
@@ -88,7 +106,6 @@ const AppContent: React.FC = () => {
           const items: MenuItem[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as MenuItem));
           setMenuItems(items);
         }
-        // If Firestore menu is empty, keep MENU_ITEMS from constants
       } catch (err) {
         console.warn('Could not load menu from Firestore, using local data.', err);
       }
@@ -97,13 +114,22 @@ const AppContent: React.FC = () => {
   }, []);
 
   const handleLogin = (role: UserRole, id: string, name: string) => {
+    // currentUser is set by onAuthStateChanged automatically from Firebase auth
+    // Just navigate — Firebase listener will have already set currentUser or will shortly
     setCurrentUser({ role: UserRole.STUDENT, id, name });
-    // Use pendingNav so navigation happens AFTER currentUser state update
     const savedOrderId = localStorage.getItem('unieats_active_order_id');
-    setPendingNav(savedOrderId ? '/order-status' : '/menu');
+    // Use setTimeout(0) to let React commit state before navigate runs route guards
+    setTimeout(() => {
+      navigate(savedOrderId ? '/order-status' : '/menu');
+    }, 0);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await signOut(auth); // Properly sign out from Firebase
+    } catch (err) {
+      console.warn('Sign out error:', err);
+    }
     setCurrentUser(null);
     setActiveOrder(null);
     setCart({});
@@ -147,7 +173,6 @@ const AppContent: React.FC = () => {
     };
 
     try {
-      // Save to Firestore — the real-time listener will pick it up automatically
       const docRef = await addDoc(collection(db, 'orders'), newOrderData);
       // Save orderId to localStorage so it persists across logout/refresh
       localStorage.setItem('unieats_active_order_id', docRef.id);
@@ -164,7 +189,6 @@ const AppContent: React.FC = () => {
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
       await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
-      // The onSnapshot listener will automatically update the orders state
     } catch (err) {
       console.error('Failed to update order status:', err);
     }
@@ -181,6 +205,16 @@ const AppContent: React.FC = () => {
       // Silently fail if menu items aren't in Firestore yet
     }
   };
+
+  // Show loading spinner while Firebase restores auth session
+  if (authLoading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-white dark:bg-zinc-900">
+        <span className="material-icons-round text-5xl text-primary animate-spin mb-3 opacity-60">sync</span>
+        <p className="text-slate-400 text-sm">Loading Uni Eats...</p>
+      </div>
+    );
+  }
 
   return (
     <Routes>
