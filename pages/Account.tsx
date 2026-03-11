@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
 
 interface AccountProps {
-  user: { role: UserRole; id: string; name: string };
+  user: { role: UserRole; id: string; name: string; photoURL?: string };
   onLogout: () => void;
 }
 
@@ -51,8 +51,12 @@ const Account: React.FC<AccountProps> = ({ user, onLogout }) => {
         <div className="bg-white dark:bg-zinc-900 rounded-[32px] p-6 shadow-sm border border-slate-100 dark:border-zinc-800 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-24 bg-primary/5 dark:bg-primary/20 -z-0"></div>
           <div className="relative z-10 flex flex-col items-center">
-            <div className="w-24 h-24 rounded-[32px] bg-primary flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-primary/20 border-4 border-white dark:border-zinc-900">
-              {user.name.split(' ').map(n => n[0]).join('')}
+            <div className="w-24 h-24 rounded-[32px] bg-primary flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-primary/20 border-4 border-white dark:border-zinc-900 overflow-hidden">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                user.name.split(' ').map(n => n[0]).join('')
+              )}
             </div>
             <h2 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">{user.name}</h2>
             <p className="text-sm font-bold text-primary dark:text-amber-500 uppercase tracking-widest">{user.role} • {user.id}</p>

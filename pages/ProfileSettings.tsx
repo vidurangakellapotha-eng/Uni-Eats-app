@@ -11,8 +11,19 @@ const ProfileSettings: React.FC = () => {
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [studentId, setStudentId] = useState('');
+    const [photoURL, setPhotoURL] = useState('');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [isChoosingAvatar, setIsChoosingAvatar] = useState(false);
+
+    const avatars = [
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=Aria',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=Luna',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=Zoe',
+        'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo',
+    ];
 
     useEffect(() => {
         const user = auth.currentUser;
@@ -20,6 +31,7 @@ const ProfileSettings: React.FC = () => {
 
         setName(user.displayName || '');
         setEmail(user.email || '');
+        setPhotoURL(user.photoURL || '');
         setStudentId(user.uid.slice(0, 8).toUpperCase());
 
         // Load extra profile data from Firestore
@@ -27,6 +39,7 @@ const ProfileSettings: React.FC = () => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
                 setPhone(data.phone || '');
+                if (data.photoURL) setPhotoURL(data.photoURL);
             }
         });
     }, []);
@@ -36,13 +49,14 @@ const ProfileSettings: React.FC = () => {
         if (!user) return;
         setSaving(true);
         try {
-            // Update Firebase Auth display name
-            await updateProfile(user, { displayName: name });
+            // Update Firebase Auth display name and photo
+            await updateProfile(user, { displayName: name, photoURL: photoURL });
             // Save extra fields to Firestore users collection
             await setDoc(doc(db, 'users', user.uid), {
                 name,
                 email,
                 phone,
+                photoURL,
                 updatedAt: new Date(),
             }, { merge: true });
             setSaved(true);
@@ -73,12 +87,47 @@ const ProfileSettings: React.FC = () => {
             </header>
 
             <main className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-                <div className="flex justify-center mb-6">
-                    <div className="relative">
-                        <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-white text-3xl font-bold shadow-xl">
-                            {name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                <div className="flex flex-col items-center mb-6">
+                    <div className="relative group">
+                        <div className="w-28 h-28 rounded-[38px] bg-white dark:bg-zinc-900 flex items-center justify-center p-1 shadow-xl border-2 border-primary/20">
+                            {photoURL ? (
+                                <img src={photoURL} className="w-full h-full rounded-[34px] object-cover" alt="Profile" />
+                            ) : (
+                                <div className="w-full h-full rounded-[34px] bg-primary flex items-center justify-center text-white text-3xl font-black">
+                                    {name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+                                </div>
+                            )}
                         </div>
+                        <button 
+                            onClick={() => setIsChoosingAvatar(!isChoosingAvatar)}
+                            className="absolute -bottom-2 -right-2 w-10 h-10 bg-primary text-white rounded-2xl flex items-center justify-center shadow-lg border-4 border-slate-50 dark:border-zinc-950 active:scale-90 transition-all hover:bg-primary-dark"
+                        >
+                            <span className="material-icons-round text-lg">edit</span>
+                        </button>
                     </div>
+                    <p className="mt-4 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em]">Tap edit to change photo</p>
+
+                    {isChoosingAvatar && (
+                        <div className="mt-6 p-4 bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-sm w-full animate-in fade-in slide-in-from-top-4 duration-300">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center mb-4">Choose your avatar</p>
+                            <div className="grid grid-cols-3 gap-3">
+                                {avatars.map((av, i) => (
+                                    <button 
+                                        key={i}
+                                        onClick={() => { setPhotoURL(av); setIsChoosingAvatar(false); }}
+                                        className={`relative w-full aspect-square rounded-2xl overflow-hidden border-2 transition-all ${photoURL === av ? 'border-primary ring-2 ring-primary/20' : 'border-slate-100 dark:border-zinc-800'}`}
+                                    >
+                                        <img src={av} className="w-full h-full object-cover" alt={`Avatar ${i}`} />
+                                        {photoURL === av && (
+                                            <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                                <span className="material-icons-round text-primary bg-white rounded-full text-xs">check</span>
+                                            </div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-4">

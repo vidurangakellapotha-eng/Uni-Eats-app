@@ -28,7 +28,7 @@ import Notifications from './pages/Notifications';
 import RateOrderPage from './pages/RateOrder';
 
 const AppContent: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<{ role: UserRole; id: string; name: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ role: UserRole; id: string; name: string; photoURL?: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
@@ -79,7 +79,12 @@ const AppContent: React.FC = () => {
       if (firebaseUser && !firebaseUser.isAnonymous) {
         // Real authenticated user — restore session automatically
         const name = firebaseUser.displayName || firebaseUser.email || 'Student';
-        setCurrentUser({ role: UserRole.STUDENT, id: firebaseUser.uid, name });
+        setCurrentUser({ 
+          role: UserRole.STUDENT, 
+          id: firebaseUser.uid, 
+          name, 
+          photoURL: firebaseUser.photoURL || undefined 
+        });
         localStorage.setItem('unieats_user_id', firebaseUser.uid); // Keep in sync for notifications
       } else if (!firebaseUser) {
         setCurrentUser(null);
