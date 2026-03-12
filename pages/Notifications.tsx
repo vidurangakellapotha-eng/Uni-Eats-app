@@ -91,8 +91,11 @@ const Notifications: React.FC<NotificationsProps> = ({ userId: propUserId }) => 
 
   const handleNotificationClick = async (notif: AppNotification) => {
     await updateDoc(doc(db, 'notifications', notif.id), { read: true }).catch(() => {});
+    
     if (notif.type === 'chat') {
       navigate('/account/support/chat');
+    } else if (['order', 'ready', 'completed', 'alert'].includes(notif.type)) {
+      navigate('/order-status');
     }
   };
 
