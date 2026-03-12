@@ -6,6 +6,7 @@ import { auth } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import StatusBar from '../components/layout/StatusBar';
 
 interface LoginProps {
   onLogin: (role: UserRole, id: string, name: string) => void;
@@ -101,15 +102,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-white dark:bg-zinc-900">
-      {/* iOS Status Bar Mock - Only on Mobile */}
-      <div className="sm:hidden absolute top-0 w-full flex justify-between px-8 py-4 pointer-events-none">
-        <span className="text-sm font-semibold">9:41</span>
-        <div className="flex gap-1.5 items-center">
-          <span className="material-icons-round text-sm">signal_cellular_alt</span>
-          <span className="material-icons-round text-sm">wifi</span>
-          <span className="material-icons-round text-sm">battery_full</span>
-        </div>
-      </div>
+      <StatusBar />
 
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-4">

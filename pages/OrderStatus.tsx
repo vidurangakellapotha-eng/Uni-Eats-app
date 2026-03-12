@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Order, OrderStatus } from '../types';
 import { db } from '../firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import StatusBar from '../components/layout/StatusBar';
+import Navbar from '../components/layout/Navbar';
 
 interface OrderStatusPageProps {
   order: Order | null;
@@ -82,14 +84,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
 
   return (
     <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark overflow-y-auto hide-scrollbar">
-      <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
-        <span className="text-sm font-semibold">9:41</span>
-        <div className="flex items-center space-x-1.5">
-          <span className="material-icons-round text-sm">signal_cellular_alt</span>
-          <span className="material-icons-round text-sm">wifi</span>
-          <span className="material-icons-round text-sm">battery_full</span>
-        </div>
-      </div>
+      <StatusBar />
 
       <header className="px-6 py-4 flex items-center justify-between">
         <button onClick={() => navigate('/menu')} className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-800 shadow-sm border border-slate-100 dark:border-zinc-800">

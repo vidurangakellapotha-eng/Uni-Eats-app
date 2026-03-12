@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { MenuItem, PaymentMethod } from '../types';
 import { db, auth } from '../firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import StatusBar from '../components/layout/StatusBar';
 
 interface SavedCard {
   id: string;
@@ -75,15 +76,8 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
   if (cartItems.length === 0) {
     return (
       <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark">
-        <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
-          <span className="text-sm font-semibold">9:41</span>
-          <div className="flex gap-1.5 items-center">
-            <span className="material-icons-round text-sm">signal_cellular_alt</span>
-            <span className="material-icons-round text-sm">wifi</span>
-            <span className="material-icons-round text-sm">battery_full</span>
-          </div>
-        </div>
-        <header className="px-6 py-4 flex items-center gap-4">
+        <StatusBar />
+        <header className="sm:hidden px-6 py-4 flex items-center gap-4">
           <button onClick={() => navigate('/menu')} className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800">
             <span className="material-icons-round text-primary">arrow_back</span>
           </button>
@@ -108,16 +102,9 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-zinc-950">
-      <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
-        <span className="text-sm font-semibold">9:41</span>
-        <div className="flex items-center space-x-1.5">
-          <span className="material-icons-round text-sm">signal_cellular_alt</span>
-          <span className="material-icons-round text-sm">wifi</span>
-          <span className="material-icons-round text-sm">battery_full</span>
-        </div>
-      </div>
+      <StatusBar />
 
-      <header className="px-6 py-4 flex items-center gap-4 sticky top-0 bg-slate-50/80 dark:bg-zinc-950/80 backdrop-blur-lg z-10">
+      <header className="sm:hidden px-6 py-4 flex items-center gap-4 sticky top-0 bg-slate-50/80 dark:bg-zinc-950/80 backdrop-blur-lg z-10">
         <button 
           onClick={() => navigate('/menu')}
           className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all"
@@ -127,7 +114,7 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
         <h1 className="text-xl font-bold text-slate-900 dark:text-white">Review Order</h1>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-6 py-4 pb-48 hide-scrollbar space-y-6">
+      <main className="flex-1 overflow-y-auto px-6 sm:px-12 py-4 sm:py-8 pb-48 hide-scrollbar max-w-5xl mx-auto w-full space-y-6">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Selected Items</p>
         
         <div className="space-y-4">
@@ -246,7 +233,7 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
         </section>
       </main>
 
-      <div className="p-6 ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 sticky bottom-0 z-20">
+      <div className="sm:hidden p-6 ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 sticky bottom-0 z-20">
         <button 
           onClick={() => {
             if (selectedMethod === PaymentMethod.CARD && savedCards.length === 0) {

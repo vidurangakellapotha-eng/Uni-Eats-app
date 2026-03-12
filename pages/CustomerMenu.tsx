@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MenuItem } from '../types';
+import StatusBar from '../components/layout/StatusBar';
+import Navbar from '../components/layout/Navbar';
 
 interface CustomerMenuProps {
   menuItems: MenuItem[];
@@ -28,18 +30,13 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
   const cartCount = (Object.values(cart) as number[]).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark">
-      {/* iOS Status Bar - Only visible on mobile */}
-      <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
-        <span className="text-sm font-semibold">9:41</span>
-        <div className="flex items-center space-x-1.5">
-          <span className="material-icons-round text-sm">signal_cellular_alt</span>
-          <span className="material-icons-round text-sm">wifi</span>
-          <span className="material-icons-round text-sm">battery_full</span>
-        </div>
+    <div className="flex flex-col min-h-screen bg-transparent">
+      {/* Mobile-only components */}
+      <div className="mobile-only-status">
+        <StatusBar />
       </div>
 
-      <header className="px-6 py-4 flex justify-between items-center">
+      <header className="mobile-only-header px-6 py-4 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white uppercase tracking-tight">Uni Eats</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">NIBM Central Cafeteria</p>
@@ -70,20 +67,20 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
         </div>
       </header>
 
-      <div className="px-6 py-2">
+      <div className="px-6 sm:px-12 py-2 sm:py-6 max-w-4xl mx-auto w-full">
         <div className="relative group">
           <span className="material-icons-round absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-primary">search</span>
           <input
             type="text"
-            placeholder="Search delicious food..."
+            placeholder="What delicious food are you looking for?"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-2xl py-4 pl-12 pr-4 text-sm focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400 dark:text-white outline-none"
+            className="w-full bg-slate-100 dark:bg-zinc-800 border-none rounded-2xl sm:rounded-3xl py-4 sm:py-6 pl-12 pr-4 text-sm sm:text-lg focus:ring-4 focus:ring-primary/10 placeholder:text-slate-400 dark:text-white outline-none transition-all"
           />
         </div>
       </div>
 
-      <div className="mt-4 flex overflow-x-auto hide-scrollbar px-6 space-x-3">
+      <div className="mt-4 sm:mt-0 flex overflow-x-auto hide-scrollbar px-6 sm:px-12 space-x-3 sm:space-x-4 sm:justify-center">
         {categories.map(cat => (
           <button
             key={cat}
@@ -173,33 +170,17 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
         </div>
       </div>
 
-      {!readOnly && (
-        <nav className="ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 px-10 pt-4 pb-8 flex justify-between items-center sticky bottom-0 z-50">
-          <button onClick={() => navigate('/menu')} className="flex flex-col items-center gap-1 text-primary">
-            <span className="material-icons-round">restaurant_menu</span>
-            <span className="text-[10px] font-black uppercase tracking-widest">Menu</span>
-          </button>
-          <button onClick={() => navigate('/order-status')} className="flex flex-col items-center gap-1 text-slate-400">
-            <span className="material-icons-round">receipt_long</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest">Orders</span>
-          </button>
-          <button onClick={() => navigate('/account')} className="flex flex-col items-center gap-1 text-slate-400 relative">
-            <span className="material-icons-round">person</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest">Account</span>
-            {hasUnreadSupport && (
-              <span className="absolute top-0 right-1/4 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900 animate-pulse"></span>
-            )}
-          </button>
-        </nav>
-      )}
-      {readOnly && (
-        <nav className="ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 px-10 pt-4 pb-8 flex justify-center items-center sticky bottom-0 z-50">
-          <button onClick={() => navigate('/')} className="flex flex-col items-center gap-1 text-primary">
-            <span className="material-icons-round">home</span>
-            <span className="text-[10px] font-black uppercase tracking-widest">Home</span>
-          </button>
-        </nav>
-      )}
+      <div className="mobile-only-navbar">
+        {!readOnly && <Navbar hasUnreadSupport={hasUnreadSupport} />}
+        {readOnly && (
+          <nav className="ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 px-10 pt-4 pb-8 flex justify-center items-center sticky bottom-0 z-50">
+            <button onClick={() => navigate('/')} className="flex flex-col items-center gap-1 text-primary">
+              <span className="material-icons-round">home</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Home</span>
+            </button>
+          </nav>
+        )}
+      </div>
     </div>
   );
 };

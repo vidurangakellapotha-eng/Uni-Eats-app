@@ -1,13 +1,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { UserRole, Order, MenuItem, OrderStatus, PaymentMethod } from './types';
+import './index.css';
 import { MENU_ITEMS } from './constants';
 import { db, auth } from './firebase';
 import {
   collection, addDoc, onSnapshot, updateDoc, doc, getDocs, getDoc, serverTimestamp, query, orderBy, where
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import Toast from './components/ui/Toast';
+import { useNotifications } from './hooks/useNotifications';
+import Header from './components/layout/Header';
+import Sidebar from './components/layout/Sidebar';
 
 // Pages
 import Login from './pages/Login';
@@ -36,10 +41,9 @@ const AppContent: React.FC = () => {
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [toast, setToast] = useState<{ msg: string; icon: string; color: string } | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const prevOrderStatusRef = useRef<string | null>(null);
+  const { unreadCount, hasUnreadChat, latestNotification } = useNotifications(currentUser?.id);
 
-  // Helper: write a notification to Firestore + show toast
   const pushNotification = async (
     userId: string,
     title: string,
@@ -49,72 +53,31 @@ const AppContent: React.FC = () => {
     color: string,
     orderId?: string
   ) => {
-    // Show toast
     setToast({ msg: title, icon, color });
     setTimeout(() => setToast(null), 4000);
-    // Write to Firestore (unreadCount updates automatically via subscription below)
     try {
       await addDoc(collection(db, 'notifications'), {
         userId, title, message, type, orderId: orderId || '', read: false,
         createdAt: serverTimestamp(),
       });
-    } catch (_) { /* silently fail */ }
+    } catch (_) { }
   };
-  // Subscribe to real-time notifications for the bell badge and toast alerts
-  const [lastNotifId, setLastNotifId] = useState<string | null>(null);
-  const [hasUnreadChat, setHasUnreadChat] = useState(false);
-  
+
   useEffect(() => {
-    if (!currentUser) { 
-      setUnreadCount(0); 
-      setHasUnreadChat(false);
-      return; 
+    console.log("%c Uni-Eats Design System v2.0 Active ", "background: #78350f; color: #fff; font-weight: bold; padding: 4px 8px; border-radius: 4px;");
+    if (latestNotification) {
+      setToast({ 
+        msg: latestNotification.title, 
+        icon: latestNotification.icon || 'notifications', 
+        color: latestNotification.color || '#6366F1' 
+      });
+      setTimeout(() => setToast(null), 4000);
     }
-    
-    // 1. Regular notifications (orders, promos, etc)
-    const qNotifs = query(
-      collection(db, 'notifications'), 
-      where('userId', 'in', [currentUser.id, 'all'])
-    );
-    
-    const unsubNotifs = onSnapshot(qNotifs, (snap) => {
-      if (snap.empty) {
-        setUnreadCount(0);
-      } else {
-        const docs = [...snap.docs].sort((a,b) => (b.data().createdAt?.toMillis() || 0) - (a.data().createdAt?.toMillis() || 0));
-        setUnreadCount(docs.filter(d => d.data().read === false).length);
-
-        const newestDoc = docs[0];
-        const data = newestDoc.data();
-        const isFresh = data.createdAt && (Date.now() - data.createdAt.toMillis() < 5000);
-        
-        if (data.read === false && isFresh && newestDoc.id !== lastNotifId) {
-          setLastNotifId(newestDoc.id);
-          setToast({ msg: data.title, icon: data.icon || 'notifications', color: data.color || '#6366F1' });
-          setTimeout(() => setToast(null), 4000);
-        }
-      }
-    });
-
-    // 2. Unread Support Messages Dot Tracker
-    const qChat = query(
-      collection(db, 'supportMessages'),
-      where('chatId', '==', currentUser.id),
-      where('isAdmin', '==', true),
-      where('read', '==', false)
-    );
-
-    const unsubChat = onSnapshot(qChat, (snap) => {
-      setHasUnreadChat(!snap.empty);
-    });
-
-    return () => {
-      unsubNotifs();
-      unsubChat();
-    };
-  }, [currentUser?.id, lastNotifId]);
+  }, [latestNotification]);
+  
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   // --- Firebase Auth listener: auto-restores session after refresh/re-login ---
   useEffect(() => {
@@ -178,17 +141,33 @@ const AppContent: React.FC = () => {
           const newStatus = savedOrder.status;
           const shortId = savedOrder.id.slice(-6).toUpperCase();
 
-          // Detect status change and send notification
+          // Detect status change and send notification locally
           if (prevStatus !== null && prevStatus !== newStatus) {
-            const userId = savedOrder.userId;
+            const shortId = savedOrder.id.slice(-6).toUpperCase();
+            let nTitle = '';
+            let nIcon = 'notifications';
+            let nColor = '#6366F1';
+
             if (newStatus === OrderStatus.PREPARING) {
-              pushNotification(userId, '👨‍🍳 Being Prepared!', `Order #${shortId} is now being prepared by the kitchen.`, 'order', 'restaurant', '#F59E0B', savedOrder.id);
+              nTitle = '👨‍🍳 Being Prepared!';
+              nIcon = 'restaurant';
+              nColor = '#F59E0B';
             } else if (newStatus === OrderStatus.READY) {
-              pushNotification(userId, '🛍 Ready for Pickup!', `Order #${shortId} is ready! Head to the counter now.`, 'ready', 'shopping_bag', '#10B981', savedOrder.id);
+              nTitle = '🛍 Ready for Pickup!';
+              nIcon = 'shopping_bag';
+              nColor = '#10B981';
             } else if (newStatus === OrderStatus.COMPLETED) {
-              pushNotification(userId, '✅ Order Completed!', `Order #${shortId} has been collected. Rate your meal!`, 'completed', 'check_circle', '#6366F1', savedOrder.id);
+              nTitle = '✅ Order Completed!';
+              nIcon = 'check_circle';
             } else if (newStatus === OrderStatus.REJECTED) {
-              pushNotification(userId, '❌ Order Rejected', `Sorry, order #${shortId} was rejected by the kitchen.`, 'alert', 'cancel', '#EF4444', savedOrder.id);
+              nTitle = '❌ Order Rejected';
+              nIcon = 'cancel';
+              nColor = '#EF4444';
+            }
+
+            if (nTitle) {
+              setToast({ msg: nTitle, icon: nIcon, color: nColor });
+              setTimeout(() => setToast(null), 4000);
             }
           }
           prevOrderStatusRef.current = newStatus;
@@ -360,31 +339,57 @@ const AppContent: React.FC = () => {
     );
   }
 
+  const cartCount = (Object.values(cart) as number[]).reduce((a, b) => a + b, 0);
   return (
-    <>
-      {/* Toast Notification Overlay */}
-      {toast && (
-        <div
-          style={{
-            position: 'fixed', top: '60px', left: '50%', transform: 'translateX(-50%)',
-            zIndex: 9999, maxWidth: '380px', width: '90%',
-            background: 'white', borderRadius: '16px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-            padding: '14px 18px',
-            display: 'flex', alignItems: 'center', gap: '12px',
-            borderLeft: `4px solid ${toast.color}`,
-            animation: 'slideDown 0.3s ease'
-          }}
-        >
-          <span className="material-icons-round" style={{ color: toast.color, fontSize: '22px' }}>{toast.icon}</span>
-          <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b', flex: 1 }}>{toast.msg}</span>
-          <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
-            <span className="material-icons-round" style={{ fontSize: '18px' }}>close</span>
-          </button>
-        </div>
-      )}
-      <style>{`@keyframes slideDown { from { opacity:0; transform:translateX(-50%) translateY(-16px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`}</style>
-      <Routes>
+    <div className="app-root-layout app-gradient-bg flex min-h-screen">
+      <style>{`
+        .app-root-layout { display: flex !important; flex-direction: row !important; min-height: 100vh !important; }
+        .desktop-sidebar { display: flex !important; width: 288px !important; min-width: 288px !important; height: 100vh !important; position: sticky !important; top: 0 !important; }
+        .main-view-container { flex: 1 !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; }
+        @media (max-width: 640px) {
+          .desktop-sidebar { display: none !important; }
+          .app-root-layout { flex-direction: column !important; }
+          .mobile-only-header, .mobile-only-navbar { display: flex !important; }
+        }
+        @media (min-width: 641px) {
+          .mobile-only-header, .mobile-only-navbar { display: none !important; }
+        }
+      `}</style>
+      <div className="desktop-sidebar">
+        <Sidebar 
+          unreadCount={unreadCount} 
+          cartCount={cartCount}
+          hasUnreadSupport={hasUnreadChat}
+          userName={currentUser?.name}
+          onLogout={handleLogout}
+        />
+      </div>
+
+      <div className="main-view-container flex-1 flex flex-col min-h-screen relative max-w-full overflow-hidden">
+        {/* Responsive Header (Visible on tablet/mobile, hidden when Sidebar is active on desktop) */}
+        {currentUser && currentUser.role === UserRole.STUDENT && (
+          <div className="mobile-only-header">
+            <Header 
+              unreadCount={unreadCount} 
+              cartCount={cartCount} 
+              userName={currentUser.name}
+              hasUnreadSupport={hasUnreadChat}
+            />
+          </div>
+        )}
+
+        {/* Toast Notification Overlay */}
+        {toast && (
+          <Toast 
+            message={toast.msg} 
+            icon={toast.icon} 
+            color={toast.color} 
+            onClose={() => setToast(null)} 
+          />
+        )}
+
+        <div className="flex-1">
+          <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login onLogin={handleLogin} />} />
       <Route path="/forgot-pin" element={<ForgotPin />} />
@@ -412,7 +417,7 @@ const AppContent: React.FC = () => {
       <Route
         path="/menu"
         element={currentUser?.role === UserRole.STUDENT
-          ? <CustomerMenu menuItems={menuItems} cart={cart} onUpdateCart={updateCart} unreadCount={unreadCount} onClearUnread={() => setUnreadCount(0)} hasUnreadSupport={hasUnreadChat} />
+          ? <CustomerMenu menuItems={menuItems} cart={cart} onUpdateCart={updateCart} unreadCount={unreadCount} onClearUnread={() => {}} hasUnreadSupport={hasUnreadChat} />
           : <Navigate to="/" />}
       />
       <Route
@@ -448,18 +453,18 @@ const AppContent: React.FC = () => {
       <Route path="/admin" element={<AdminOrders />} />
 
       <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
-    </>
+      </Routes>
+        </div>
+      </div>
+    </div>
   );
 };
 
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-100 dark:bg-black">
-        <div className="max-w-screen-2xl mx-auto bg-white dark:bg-zinc-900 min-h-screen shadow-2xl relative overflow-x-hidden">
-          <AppContent />
-        </div>
+      <div className="min-h-screen relative overflow-x-hidden">
+        <AppContent />
       </div>
     </Router>
   );
