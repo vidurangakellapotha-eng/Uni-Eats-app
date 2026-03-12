@@ -55,17 +55,25 @@ const RateOrderPage: React.FC<RateOrderProps> = ({ orderId, items, userId, userN
     setSubmitting(true);
 
     try {
-      // Save the review document
-      await addDoc(collection(db, 'reviews'), {
-        orderId,
-        userId,
-        userName,
-        ratings,
-        comment: comment.trim(),
+      // 1. Prepare review data with safety defaults
+      const reviewData: any = {
+        orderId: orderId || 'unknown_order',
+        userId: userId || 'anonymous_user',
+        userName: userName || 'Customer',
+        ratings: ratings || {},
+        comment: (comment || '').trim(),
         createdAt: serverTimestamp(),
-      });
+      };
 
-      // Update each menu item's rating (weighted average)
+      // Final safety sweep: Remove any undefined fields to prevent Firestore crashes
+      const cleanedReviewData = Object.fromEntries(
+        Object.entries(reviewData).filter(([_, v]) => v !== undefined)
+      );
+
+      // 2. Save the review document
+      await addDoc(collection(db, 'reviews'), cleanedReviewData);
+
+      // 3. Update each menu item's rating (weighted average)
       await Promise.all(
         items.map(async (item) => {
           const newRating = ratings[item.menuItemId];
@@ -80,20 +88,25 @@ const RateOrderPage: React.FC<RateOrderProps> = ({ orderId, items, userId, userN
               const newCount = oldCount + 1;
               const newAvg = parseFloat(((oldRating * oldCount + newRating) / newCount).toFixed(1));
               await updateDoc(menuRef, { rating: newAvg, reviewCount: newCount });
+            } else {
+              console.log(`Menu item ${item.menuItemId} not found in Firestore, skipping aggregation.`);
             }
-          } catch (_) { /* skip if item not in Firestore */ }
+          } catch (err: any) { 
+            console.warn(`Aggregation failed for item ${item.menuItemId}:`, err.message);
+          }
         })
       );
 
       // Clear active order from localStorage
       localStorage.removeItem('unieats_active_order_id');
+      localStorage.removeItem('unieats_rating_order');
       setSubmitted(true);
 
       // Navigate to menu after a moment
       setTimeout(() => navigate('/menu'), 2200);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to submit rating:', err);
-      alert('Could not submit rating. Please try again.');
+      alert(`[V1.4] Could not submit rating: ${err.message || 'Unknown error'}. Please try again.`);
     } finally {
       setSubmitting(false);
     }
@@ -101,6 +114,7 @@ const RateOrderPage: React.FC<RateOrderProps> = ({ orderId, items, userId, userN
 
   const handleSkip = () => {
     localStorage.removeItem('unieats_active_order_id');
+    localStorage.removeItem('unieats_rating_order');
     navigate('/menu');
   };
 
