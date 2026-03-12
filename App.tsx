@@ -303,10 +303,15 @@ const AppContent: React.FC = () => {
     }
 
     try {
-      const docRef = await addDoc(collection(db, 'orders'), newOrderData);
+      // Final safety sweep: Remove any undefined fields to prevent Firestore crashes
+      const cleanedOrderData = Object.fromEntries(
+        Object.entries(newOrderData).filter(([_, v]) => v !== undefined)
+      );
+
+      const docRef = await addDoc(collection(db, 'orders'), cleanedOrderData);
       localStorage.setItem('unieats_active_order_id', docRef.id);
-      prevOrderStatusRef.current = OrderStatus.PLACED; // Set initial status for tracking
-      const tempOrder: Order = { id: docRef.id, ...newOrderData } as Order;
+      prevOrderStatusRef.current = OrderStatus.PLACED; 
+      const tempOrder: Order = { id: docRef.id, ...cleanedOrderData } as Order;
       setActiveOrder(tempOrder);
       setCart({});
       // Notify: order placed
@@ -321,7 +326,7 @@ const AppContent: React.FC = () => {
       navigate('/order-status');
     } catch (err: any) {
       console.error('Failed to place order:', err);
-      alert(`Failed to place order: ${err.message || 'Unknown error'}. Please check your internet connection or try again.`);
+      alert(`[V1.3] Failed to place order: ${err.message || 'Unknown error'}. Please check your internet connection or try again.`);
     }
   };
 
