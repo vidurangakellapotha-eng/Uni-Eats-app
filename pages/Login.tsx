@@ -101,7 +101,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-white dark:bg-zinc-900">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-transparent">
       <StatusBar />
 
       <div className="w-full max-w-sm space-y-8">

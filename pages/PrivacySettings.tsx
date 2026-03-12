@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { sendPasswordResetEmail, deleteUser } from 'firebase/auth';
 import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import StatusBar from '../components/layout/StatusBar';
 
 const PrivacySettings: React.FC = () => {
     const navigate = useNavigate();
@@ -126,32 +127,24 @@ const PrivacySettings: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-zinc-950">
-                <span className="material-icons-round text-primary animate-spin text-4xl">security</span>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-transparent">
+                <span className="material-icons-round text-primary animate-spin text-4xl">sync</span>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-zinc-950">
-            {/* iOS Header */}
-            <div className="px-8 pt-10 pb-2 flex justify-between items-center w-full">
-                <span className="text-sm font-semibold text-slate-900 dark:text-white">9:41</span>
-                <div className="flex items-center space-x-1.5 text-slate-900 dark:text-white">
-                    <span className="material-icons-round text-sm">signal_cellular_alt</span>
-                    <span className="material-icons-round text-sm">wifi</span>
-                    <span className="material-icons-round text-sm">battery_full</span>
-                </div>
-            </div>
-
-            <header className="px-6 py-4 flex items-center gap-4">
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <StatusBar />
+            <header className="px-6 py-6 flex items-center justify-between">
                 <button
                     onClick={() => navigate(-1)}
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all"
                 >
-                    <span className="material-icons-round text-primary">arrow_back</span>
+                    <span className="material-icons-round text-primary text-xl">arrow_back</span>
                 </button>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Privacy & Security</h1>
+                <h1 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Security</h1>
+                <div className="w-10"></div>
             </header>
 
             <main className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
