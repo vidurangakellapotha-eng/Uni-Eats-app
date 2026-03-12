@@ -75,7 +75,7 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
   if (cartItems.length === 0) {
     return (
       <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark">
-        <div className="px-8 pt-10 pb-2 flex justify-between items-center w-full">
+        <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
           <span className="text-sm font-semibold">9:41</span>
           <div className="flex gap-1.5 items-center">
             <span className="material-icons-round text-sm">signal_cellular_alt</span>
@@ -108,7 +108,7 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-zinc-950">
-      <div className="px-8 pt-10 pb-2 flex justify-between items-center w-full">
+      <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
         <span className="text-sm font-semibold">9:41</span>
         <div className="flex items-center space-x-1.5">
           <span className="material-icons-round text-sm">signal_cellular_alt</span>

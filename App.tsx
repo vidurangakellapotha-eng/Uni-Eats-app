@@ -456,8 +456,10 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="max-w-[430px] mx-auto bg-white dark:bg-zinc-900 min-h-screen shadow-2xl relative overflow-x-hidden">
-        <AppContent />
+      <div className="min-h-screen bg-slate-100 dark:bg-black">
+        <div className="max-w-screen-2xl mx-auto bg-white dark:bg-zinc-900 min-h-screen shadow-2xl relative overflow-x-hidden">
+          <AppContent />
+        </div>
       </div>
     </Router>
   );

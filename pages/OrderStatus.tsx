@@ -82,7 +82,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
 
   return (
     <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark overflow-y-auto hide-scrollbar">
-      <div className="px-8 pt-10 pb-2 flex justify-between items-center w-full">
+      <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
         <span className="text-sm font-semibold">9:41</span>
         <div className="flex items-center space-x-1.5">
           <span className="material-icons-round text-sm">signal_cellular_alt</span>

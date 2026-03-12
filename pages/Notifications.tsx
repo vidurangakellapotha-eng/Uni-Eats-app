@@ -101,7 +101,7 @@ const Notifications: React.FC<NotificationsProps> = ({ userId: propUserId }) => 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-zinc-950">
       {/* iOS Status Bar */}
-      <div className="px-8 pt-10 pb-2 flex justify-between items-center w-full">
+      <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
         <span className="text-sm font-semibold text-slate-900 dark:text-white">9:41</span>
         <div className="flex items-center space-x-1.5 text-slate-900 dark:text-white">
           <span className="material-icons-round text-sm">signal_cellular_alt</span>

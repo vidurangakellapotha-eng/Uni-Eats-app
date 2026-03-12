@@ -101,8 +101,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-white dark:bg-zinc-900">
-      {/* iOS Status Bar Mock */}
-      <div className="absolute top-0 w-full flex justify-between px-8 py-4 pointer-events-none">
+      {/* iOS Status Bar Mock - Only on Mobile */}
+      <div className="sm:hidden absolute top-0 w-full flex justify-between px-8 py-4 pointer-events-none">
         <span className="text-sm font-semibold">9:41</span>
         <div className="flex gap-1.5 items-center">
           <span className="material-icons-round text-sm">signal_cellular_alt</span>

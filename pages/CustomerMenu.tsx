@@ -29,8 +29,8 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
 
   return (
     <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark">
-      {/* iOS Status Bar */}
-      <div className="px-8 pt-10 pb-2 flex justify-between items-center w-full">
+      {/* iOS Status Bar - Only visible on mobile */}
+      <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
         <span className="text-sm font-semibold">9:41</span>
         <div className="flex items-center space-x-1.5">
           <span className="material-icons-round text-sm">signal_cellular_alt</span>
@@ -99,7 +99,7 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
       </div>
 
       <div className="flex-1 overflow-y-auto hide-scrollbar px-6 py-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {filteredItems.map(item => (
             <div key={item.id} className={`bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden shadow-sm border border-slate-100 dark:border-zinc-800 transition-all flex flex-col ${!item.available ? 'opacity-70' : ''}`}>
               <div className="relative h-28 overflow-hidden">
