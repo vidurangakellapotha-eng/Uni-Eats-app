@@ -141,23 +141,40 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
         )}
 
         {/* Order header card */}
-        <div className={`${order.status === OrderStatus.READY ? 'mt-4' : 'mt-4'} p-6 bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-slate-100 dark:border-zinc-800`}>
+        <div className={`p-6 bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border ${order.status === OrderStatus.REJECTED ? 'border-red-200 dark:border-red-900/30 ring-4 ring-red-50 dark:ring-red-900/5' : 'border-slate-100 dark:border-zinc-800'}`}>
           <div className="flex justify-between items-center mb-4">
             <div>
               <p className="text-[10px] uppercase tracking-widest text-slate-400 font-black">Current Order</p>
-              <h2 className="text-3xl font-black text-primary dark:text-white mt-1">#{(order.id || '').slice(-6).toUpperCase()}</h2>
+              <h2 className={`text-3xl font-black mt-1 ${order.status === OrderStatus.REJECTED ? 'text-red-500' : 'text-primary dark:text-white'}`}>#{(order.id || '').slice(-6).toUpperCase()}</h2>
             </div>
-            <div className={`px-4 py-1.5 rounded-full ${order.status === OrderStatus.PREPARING ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' :
+            <div className={`px-4 py-1.5 rounded-full ${
+              order.status === OrderStatus.PREPARING ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' :
               order.status === OrderStatus.READY ? 'bg-green-50 dark:bg-green-900/20 text-green-600' :
-                'bg-slate-100 dark:bg-zinc-800 text-slate-500'
-              }`}>
-              <span className="text-xs font-black uppercase tracking-wider">{order.status}</span>
+              order.status === OrderStatus.REJECTED ? 'bg-red-50 dark:bg-red-900/20 text-red-600' :
+              'bg-slate-100 dark:bg-zinc-800 text-slate-500'
+            }`}>
+              <span className="text-xs font-black uppercase tracking-wider">{order.status === OrderStatus.REJECTED ? 'Cancelled' : order.status}</span>
             </div>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Placed today at {order.timestamp} • Paid via <span className="text-primary font-bold">{order.paymentMethod}</span></p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {order.status === OrderStatus.REJECTED 
+              ? 'This order has been cancelled and will not be prepared.' 
+              : `Placed today at ${order.timestamp} • Paid via ${order.paymentMethod}`}
+          </p>
         </div>
 
-        <div className="mt-10 space-y-10 relative">
+        {order.status === OrderStatus.REJECTED ? (
+          <div className="mt-12 flex flex-col items-center text-center animate-in zoom-in-95 duration-500">
+            <div className="w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/10 flex items-center justify-center mb-6">
+              <span className="material-icons-round text-red-500 text-4xl">cancel</span>
+            </div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Order Cancelled</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-[240px]">
+              If you used campus credits, they have been automatically refunded to your account.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-10 space-y-10 relative">
           <div className="absolute left-[19px] top-6 bottom-6 w-0.5 bg-slate-100 dark:bg-zinc-800"></div>
 
           {steps.map((step, idx) => {
@@ -194,6 +211,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
             );
           })}
         </div>
+      )}
 
         {/* Order Items (always show, hidden at READY since it's already in the pickup card above) */}
         {order.status !== OrderStatus.READY && (

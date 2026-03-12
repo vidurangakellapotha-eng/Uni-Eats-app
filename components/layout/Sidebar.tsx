@@ -20,6 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ unreadCount = 0, cartCount = 0, hasUn
       title: 'Menu',
       items: [
         { label: 'Explore Food', icon: 'restaurant_menu', path: userName ? '/menu' : '/public-menu' },
+        { label: 'Announcements', icon: 'notifications_none', path: '/notifications', badge: unreadCount > 0, count: unreadCount },
         { label: 'My Basket', icon: 'shopping_basket', path: '/cart', badge: cartCount > 0, count: cartCount },
       ]
     },

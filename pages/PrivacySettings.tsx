@@ -134,9 +134,12 @@ const PrivacySettings: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-transparent">
-            <StatusBar />
-            <header className="px-6 py-6 flex items-center justify-between">
+        <div className="flex flex-col h-screen overflow-hidden bg-transparent">
+            <div className="sm:hidden">
+                <StatusBar />
+            </div>
+
+            <header className="sm:hidden px-6 py-6 flex items-center justify-between">
                 <button
                     onClick={() => navigate(-1)}
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all"
@@ -147,7 +150,8 @@ const PrivacySettings: React.FC = () => {
                 <div className="w-10"></div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+            <main className="flex-1 overflow-y-auto px-6 py-8 sm:py-16 pb-32 hide-scrollbar">
+                <div className="max-w-2xl mx-auto w-full space-y-12">
                 {feedback && (
                     <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${feedback.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                         <span className="material-icons-round">{feedback.type === 'success' ? 'check_circle' : 'error'}</span>
@@ -218,6 +222,7 @@ const PrivacySettings: React.FC = () => {
                     >
                         Delete Account Data
                     </button>
+                </div>
                 </div>
             </main>
 
