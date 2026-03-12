@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { OrderItem } from '../types';
 
@@ -52,10 +52,19 @@ const RateOrderPage: React.FC<RateOrderProps> = ({ orderId, items, userId, userN
 
   const handleSubmit = async () => {
     if (!allRated) return;
+    
+    // 1. Explicit Session Check
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Session Expired: Please log out and log in again to submit a rating. (Firestore requires an active login)");
+      setSubmitting(false);
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      // 1. Recursive Cleaning Function (Handles objects and arrays)
+      // 2. Recursive Cleaning Function
       const deepClean = (obj: any): any => {
         if (Array.isArray(obj)) return obj.map(deepClean).filter(v => v !== undefined);
         if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
@@ -68,30 +77,29 @@ const RateOrderPage: React.FC<RateOrderProps> = ({ orderId, items, userId, userN
         return obj;
       };
 
-      // 2. Prepare and Deep Clean the review
+      // 3. Prepare Review (v1.6)
       const rawReview = {
         orderId: orderId || 'unknown',
-        userId: userId || 'anonymous',
-        userName: userName || 'Customer',
+        userId: user.uid, // Use physical auth ID
+        userName: userName || user.displayName || 'Customer',
         ratings: ratings || {},
         comment: (comment || '').trim(),
         createdAt: serverTimestamp(),
-        v: '1.5' // Version tracking
+        v: '1.6' 
       };
       
       const cleanedReview = deepClean(rawReview);
 
-      // 3. Save the main Review Document
-      console.log('Submitting review:', cleanedReview);
+      // 4. Submit main Review
+      console.log('Final Submission Check:', { authId: user.uid, data: cleanedReview });
       let reviewDocRef;
       try {
         reviewDocRef = await addDoc(collection(db, 'reviews'), cleanedReview);
       } catch (err: any) {
-        throw new Error(`Review Creation Failed: ${err.message}`);
+        throw new Error(`Permission Denied for 'reviews'. Check Firebase Rules. (${err.message})`);
       }
 
-      // 4. Update Menu Aggregations (Non-blocking if one fails, but we track errors)
-      let aggregationErrors = 0;
+      // 5. Update Menu Aggregations
       await Promise.all(
         (items || []).map(async (item) => {
           const newRating = ratings[item.menuItemId];
@@ -107,24 +115,21 @@ const RateOrderPage: React.FC<RateOrderProps> = ({ orderId, items, userId, userN
               const newAvg = parseFloat(((oldRating * oldCount + newRating) / newCount).toFixed(1));
               await updateDoc(menuRef, { rating: newAvg, reviewCount: newCount });
             }
-          } catch (err) {
-            console.warn(`Could not update menu item ${item.menuItemId}`, err);
-            aggregationErrors++;
+          } catch (err: any) {
+             console.warn(`Menu update failed: ${err.message}`);
+             // Note: Review still succeeds if menu update fails
           }
         })
       );
 
-      // 5. Finalize UI
       localStorage.removeItem('unieats_active_order_id');
       localStorage.removeItem('unieats_rating_order');
       setSubmitted(true);
       setTimeout(() => navigate('/menu'), 2200);
 
     } catch (err: any) {
-      console.error('Rating Error:', err);
-      // Detailed error reporting for the user
-      const msg = err.message || 'Check your database rules or internet.';
-      alert(`[V1.5 Error] ${msg}\n\nTip: Make sure you have "reviews" collection rules set to allow "create" in Firebase Console.`);
+      console.error('Rating Failed:', err);
+      alert(`[V1.6 Error] ${err.message}\n\nPlease ensure your Firebase Rules allow "write" to the "reviews" collection.`);
     } finally {
       setSubmitting(false);
     }
