@@ -128,9 +128,12 @@ const PaymentMethods: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-transparent">
-            <StatusBar />
-            <header className="px-6 py-6 flex items-center justify-between">
+        <div className="flex flex-col h-screen overflow-hidden bg-transparent">
+            <div className="sm:hidden">
+                <StatusBar />
+            </div>
+
+            <header className="sm:hidden px-6 py-6 flex items-center justify-between">
                 <button
                     onClick={() => navigate(-1)}
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all"
@@ -141,7 +144,8 @@ const PaymentMethods: React.FC = () => {
                 <div className="w-10"></div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-6 py-4 space-y-6 pb-20">
+            <main className="flex-1 overflow-y-auto px-6 py-8 sm:py-16 pb-32 hide-scrollbar">
+                <div className="max-w-2xl mx-auto w-full space-y-8">
                 {/* Credits Card */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary to-orange-600 rounded-[32px] p-8 text-white shadow-xl shadow-primary/20">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
@@ -274,6 +278,7 @@ const PaymentMethods: React.FC = () => {
                         )}
                     </div>
                 )}
+                </div>
             </main>
         </div>
     );

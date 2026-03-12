@@ -31,9 +31,11 @@ const OrderHistory: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col min-h-screen bg-transparent">
-            <StatusBar />
-            <header className="px-6 py-6 flex items-center justify-between">
+        <div className="flex flex-col h-screen overflow-hidden bg-transparent">
+            <div className="sm:hidden">
+                <StatusBar />
+            </div>
+            <header className="sm:hidden px-6 py-6 flex items-center justify-between">
                 <button 
                     onClick={() => navigate(-1)} 
                     className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-800 shadow-sm border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all"
@@ -44,7 +46,8 @@ const OrderHistory: React.FC = () => {
                 <div className="w-10"></div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-6 py-4 space-y-6 pb-10">
+            <main className="flex-1 overflow-y-auto px-6 py-8 sm:py-16 pb-32 hide-scrollbar">
+                <div className="max-w-2xl mx-auto w-full space-y-8">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-64 text-slate-400">
                         <span className="material-icons-round text-5xl mb-3 animate-spin opacity-40">sync</span>
@@ -91,6 +94,7 @@ const OrderHistory: React.FC = () => {
                         ))}
                     </div>
                 )}
+                </div>
             </main>
         </div>
     );
