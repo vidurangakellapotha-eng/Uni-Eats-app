@@ -13,6 +13,7 @@ import Toast from './components/ui/Toast';
 import { useNotifications } from './hooks/useNotifications';
 import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
+import Navbar from './components/layout/Navbar';
 
 // Pages
 import Login from './pages/Login';
@@ -452,9 +453,16 @@ const AppContent: React.FC = () => {
       {/* Admin Route */}
       <Route path="/admin" element={<AdminOrders />} />
 
-      <Route path="*" element={<Navigate to="/" />} />
       </Routes>
         </div>
+        
+        {/* Persistent Bottom Navbar (Mobile only) */}
+        {currentUser && currentUser.role === UserRole.STUDENT && 
+         location.pathname !== '/' && location.pathname !== '/login' && (
+          <div className="mobile-only-navbar">
+            <Navbar hasUnreadSupport={hasUnreadChat} />
+          </div>
+        )}
       </div>
     </div>
   );

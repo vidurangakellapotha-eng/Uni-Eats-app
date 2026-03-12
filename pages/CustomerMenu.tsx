@@ -170,17 +170,6 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
         </div>
       </div>
 
-      <div className="mobile-only-navbar">
-        {!readOnly && <Navbar hasUnreadSupport={hasUnreadSupport} />}
-        {readOnly && (
-          <nav className="ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 px-10 pt-4 pb-8 flex justify-center items-center sticky bottom-0 z-50">
-            <button onClick={() => navigate('/')} className="flex flex-col items-center gap-1 text-primary">
-              <span className="material-icons-round">home</span>
-              <span className="text-[10px] font-black uppercase tracking-widest">Home</span>
-            </button>
-          </nav>
-        )}
-      </div>
     </div>
   );
 };

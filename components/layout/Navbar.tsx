@@ -17,7 +17,7 @@ const Navbar: React.FC<NavbarProps> = ({ hasUnreadSupport = false }) => {
   ];
 
   return (
-    <nav className="mobile-only-navbar ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 px-10 pt-4 pb-8 flex justify-between items-center sticky bottom-0 z-50">
+    <nav className="ios-blur bg-white/90 dark:bg-zinc-900/90 border-t border-slate-100 dark:border-zinc-800 px-8 pt-3 pb-6 flex justify-around items-center sticky bottom-0 z-50">
       {navItems.map((item) => {
         const isActive = location.pathname === item.path;
         return (
