@@ -122,7 +122,8 @@ const AppContent: React.FC = () => {
       if (firebaseUser && !firebaseUser.isAnonymous) {
         // Security check: If they are an admin, they shouldn't be here
         const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
-        if (adminDoc.exists()) {
+        const OWNER_EMAIL = 'vidurangakellapotha@gmail.com';
+        if (adminDoc.exists() && firebaseUser.email !== OWNER_EMAIL) {
           console.warn("Admin detected on student app. Signing out.");
           await signOut(auth);
           setCurrentUser(null);
@@ -314,9 +315,9 @@ const AppContent: React.FC = () => {
         );
       }
       navigate('/order-status');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to place order:', err);
-      alert('Failed to place order. Please try again.');
+      alert(`Failed to place order: ${err.message || 'Unknown error'}. Please check your internet connection or try again.`);
     }
   };
 
