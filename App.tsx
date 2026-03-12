@@ -190,6 +190,9 @@ const AppContent: React.FC = () => {
         setActiveOrder(prev => {
           if (!prev) return prev;
           const updated = fetched.find(o => o.id === prev.id);
+          if (updated && (updated.status === OrderStatus.REJECTED || updated.status === OrderStatus.COMPLETED)) {
+            return null;
+          }
           return updated ?? prev;
         });
       }

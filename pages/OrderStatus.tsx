@@ -65,7 +65,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
     );
   }
 
-  if (!order) {
+  if (!order || order.status === OrderStatus.REJECTED) {
     return (
       <div className="h-screen flex flex-col items-center justify-center p-10 text-center">
         <span className="material-icons-round text-6xl text-slate-200 mb-4">shopping_cart_checkout</span>
