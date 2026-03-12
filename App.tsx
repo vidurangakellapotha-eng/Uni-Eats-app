@@ -280,7 +280,7 @@ const AppContent: React.FC = () => {
 
     const total = itemsToOrder.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
-    const newOrderData = {
+    const newOrderData: any = {
       userId: currentUser?.id || 'GUEST',
       userName: currentUser?.name || 'Guest User',
       userType: 'Student',
@@ -288,7 +288,6 @@ const AppContent: React.FC = () => {
       total,
       status: OrderStatus.PLACED,
       paymentMethod,
-      cardId,
       // Store max prepTime across all ordered items
       prepTime: Math.max(...itemsToOrder.map(i => {
         const menuItem = menuItems.find(m => m.id === i.menuItemId);
@@ -297,6 +296,11 @@ const AppContent: React.FC = () => {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       createdAt: serverTimestamp(),
     };
+
+    // Only include cardId if it's provided (Firestore doesn't allow undefined)
+    if (cardId) {
+      newOrderData.cardId = cardId;
+    }
 
     try {
       const docRef = await addDoc(collection(db, 'orders'), newOrderData);
