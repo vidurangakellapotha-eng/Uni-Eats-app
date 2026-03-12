@@ -349,8 +349,9 @@ const AppContent: React.FC = () => {
         .main-view-container { flex: 1 !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; }
         @media (max-width: 640px) {
           .desktop-sidebar { display: none !important; }
-          .app-root-layout { flex-direction: column !important; }
-          .mobile-only-header, .mobile-only-navbar { display: flex !important; }
+          .app-root-layout { flex-direction: column !important; padding-bottom: 80px !important; }
+          .mobile-only-header { display: flex !important; }
+          .mobile-only-navbar { display: flex !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100vw !important; z-index: 9999 !important; }
         }
         @media (min-width: 641px) {
           .mobile-only-header, .mobile-only-navbar { display: none !important; }
@@ -455,15 +456,15 @@ const AppContent: React.FC = () => {
 
       </Routes>
         </div>
-        
-        {/* Persistent Bottom Navbar (Mobile only) */}
-        {currentUser && currentUser.role === UserRole.STUDENT && 
-         location.pathname !== '/' && location.pathname !== '/login' && (
-          <div className="mobile-only-navbar">
-            <Navbar hasUnreadSupport={hasUnreadChat} />
-          </div>
-        )}
       </div>
+
+      {/* Persistent Bottom Navbar (Mobile only) - Moved to Root for Full Width */}
+      {currentUser && currentUser.role === UserRole.STUDENT && 
+       location.pathname !== '/' && location.pathname !== '/login' && (
+        <div className="mobile-only-navbar">
+          <Navbar hasUnreadSupport={hasUnreadChat} />
+        </div>
+      )}
     </div>
   );
 };

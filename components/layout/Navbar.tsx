@@ -17,22 +17,22 @@ const Navbar: React.FC<NavbarProps> = ({ hasUnreadSupport = false }) => {
   ];
 
   return (
-    <nav className="ios-blur bg-white/90 dark:bg-zinc-900/90 border-t border-slate-100 dark:border-zinc-800 px-8 pt-3 pb-6 flex justify-around items-center sticky bottom-0 z-50">
+    <nav className="ios-blur bg-white/95 dark:bg-zinc-900/95 border-t border-slate-100 dark:border-zinc-800 px-10 pt-4 pb-8 flex justify-between items-center w-full">
       {navItems.map((item) => {
         const isActive = location.pathname === item.path;
         return (
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
-            className={`flex flex-col items-center gap-1 transition-all ${isActive ? 'text-primary' : 'text-slate-400'}`}
+            className={`flex flex-col items-center gap-1.5 transition-all outline-none ${isActive ? 'text-primary' : 'text-slate-400'}`}
           >
             <div className="relative">
-              <span className="material-icons-round">{item.icon}</span>
+              <span className="material-icons-round text-2xl">{item.icon}</span>
               {item.badge && (
-                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900 animate-pulse"></span>
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900"></span>
               )}
             </div>
-            <span className={`text-[10px] uppercase tracking-widest ${isActive ? 'font-black' : 'font-bold'}`}>
+            <span className={`text-[9px] uppercase tracking-[0.15em] ${isActive ? 'font-black' : 'font-bold'}`}>
               {item.label}
             </span>
           </button>
