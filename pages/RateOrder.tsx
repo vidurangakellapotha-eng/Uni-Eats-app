@@ -55,27 +55,45 @@ const RateOrderPage: React.FC<RateOrderProps> = ({ orderId, items, userId, userN
     setSubmitting(true);
 
     try {
-      // 1. Prepare review data with safety defaults
-      const reviewData: any = {
-        orderId: orderId || 'unknown_order',
-        userId: userId || 'anonymous_user',
+      // 1. Recursive Cleaning Function (Handles objects and arrays)
+      const deepClean = (obj: any): any => {
+        if (Array.isArray(obj)) return obj.map(deepClean).filter(v => v !== undefined);
+        if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+          return Object.fromEntries(
+            Object.entries(obj)
+              .map(([k, v]) => [k, deepClean(v)])
+              .filter(([_, v]) => v !== undefined)
+          );
+        }
+        return obj;
+      };
+
+      // 2. Prepare and Deep Clean the review
+      const rawReview = {
+        orderId: orderId || 'unknown',
+        userId: userId || 'anonymous',
         userName: userName || 'Customer',
         ratings: ratings || {},
         comment: (comment || '').trim(),
         createdAt: serverTimestamp(),
+        v: '1.5' // Version tracking
       };
+      
+      const cleanedReview = deepClean(rawReview);
 
-      // Final safety sweep: Remove any undefined fields to prevent Firestore crashes
-      const cleanedReviewData = Object.fromEntries(
-        Object.entries(reviewData).filter(([_, v]) => v !== undefined)
-      );
+      // 3. Save the main Review Document
+      console.log('Submitting review:', cleanedReview);
+      let reviewDocRef;
+      try {
+        reviewDocRef = await addDoc(collection(db, 'reviews'), cleanedReview);
+      } catch (err: any) {
+        throw new Error(`Review Creation Failed: ${err.message}`);
+      }
 
-      // 2. Save the review document
-      await addDoc(collection(db, 'reviews'), cleanedReviewData);
-
-      // 3. Update each menu item's rating (weighted average)
+      // 4. Update Menu Aggregations (Non-blocking if one fails, but we track errors)
+      let aggregationErrors = 0;
       await Promise.all(
-        items.map(async (item) => {
+        (items || []).map(async (item) => {
           const newRating = ratings[item.menuItemId];
           if (!newRating) return;
           try {
@@ -88,25 +106,25 @@ const RateOrderPage: React.FC<RateOrderProps> = ({ orderId, items, userId, userN
               const newCount = oldCount + 1;
               const newAvg = parseFloat(((oldRating * oldCount + newRating) / newCount).toFixed(1));
               await updateDoc(menuRef, { rating: newAvg, reviewCount: newCount });
-            } else {
-              console.log(`Menu item ${item.menuItemId} not found in Firestore, skipping aggregation.`);
             }
-          } catch (err: any) { 
-            console.warn(`Aggregation failed for item ${item.menuItemId}:`, err.message);
+          } catch (err) {
+            console.warn(`Could not update menu item ${item.menuItemId}`, err);
+            aggregationErrors++;
           }
         })
       );
 
-      // Clear active order from localStorage
+      // 5. Finalize UI
       localStorage.removeItem('unieats_active_order_id');
       localStorage.removeItem('unieats_rating_order');
       setSubmitted(true);
-
-      // Navigate to menu after a moment
       setTimeout(() => navigate('/menu'), 2200);
+
     } catch (err: any) {
-      console.error('Failed to submit rating:', err);
-      alert(`[V1.4] Could not submit rating: ${err.message || 'Unknown error'}. Please try again.`);
+      console.error('Rating Error:', err);
+      // Detailed error reporting for the user
+      const msg = err.message || 'Check your database rules or internet.';
+      alert(`[V1.5 Error] ${msg}\n\nTip: Make sure you have "reviews" collection rules set to allow "create" in Firebase Console.`);
     } finally {
       setSubmitting(false);
     }
