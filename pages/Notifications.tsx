@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, onSnapshot, query, where, orderBy, updateDoc, doc, writeBatch } from 'firebase/firestore';
+import StatusBar from '../components/layout/StatusBar';
 
 interface AppNotification {
   id: string;
@@ -102,45 +103,50 @@ const Notifications: React.FC<NotificationsProps> = ({ userId: propUserId }) => 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-zinc-950">
-      {/* iOS Status Bar */}
-      <div className="sm:hidden px-8 pt-10 pb-2 flex justify-between items-center w-full">
-        <span className="text-sm font-semibold text-slate-900 dark:text-white">9:41</span>
-        <div className="flex items-center space-x-1.5 text-slate-900 dark:text-white">
-          <span className="material-icons-round text-sm">signal_cellular_alt</span>
-          <span className="material-icons-round text-sm">wifi</span>
-          <span className="material-icons-round text-sm">battery_full</span>
-        </div>
+    <div className="flex flex-col h-screen overflow-hidden bg-transparent">
+      <div className="sm:hidden">
+        <StatusBar />
       </div>
 
-      <header className="px-6 py-4 flex items-center gap-4">
+      <header className="sm:hidden px-6 py-6 flex items-center gap-4">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all"
         >
-          <span className="material-icons-round text-primary">arrow_back</span>
+          <span className="material-icons-round text-primary text-xl">arrow_back</span>
         </button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Notifications</h1>
-          {unreadCount > 0 && (
-            <p className="text-xs text-primary font-bold">{unreadCount} unread</p>
-          )}
+        <div className="flex-1">
+          <h1 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Alerts</h1>
         </div>
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="ml-auto text-primary text-xs font-bold uppercase tracking-widest"
+            className="text-primary text-[10px] font-black uppercase tracking-widest bg-primary/5 px-4 py-2 rounded-full"
           >
-            Mark all read
+            Clear All
           </button>
         )}
       </header>
 
-      <main className="flex-1 overflow-y-auto px-6 py-4 space-y-3 pb-20">
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <span className="material-icons-round text-4xl text-primary animate-spin opacity-40">sync</span>
-          </div>
+      {/* Desktop Header - Visible only on web */}
+      <div className="hidden sm:flex px-12 pt-12 pb-6 items-center justify-between max-w-4xl mx-auto w-full">
+         <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Notifications</h1>
+         {unreadCount > 0 && (
+            <button
+               onClick={markAllRead}
+               className="text-primary text-xs font-black uppercase tracking-widest hover:underline"
+            >
+               Mark all as read
+            </button>
+         )}
+      </div>
+
+      <main className="flex-1 overflow-y-auto px-6 py-4 sm:py-8 pb-32 hide-scrollbar">
+        <div className="max-w-4xl mx-auto w-full">
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <span className="material-icons-round text-5xl text-primary animate-spin opacity-40">sync</span>
+            </div>
         ) : !userId ? (
           <div className="text-center py-16">
             <span className="material-icons-round text-5xl text-slate-200 dark:text-zinc-700">notifications_off</span>
@@ -195,6 +201,7 @@ const Notifications: React.FC<NotificationsProps> = ({ userId: propUserId }) => 
             );
           })
         )}
+        </div>
       </main>
     </div>
   );
