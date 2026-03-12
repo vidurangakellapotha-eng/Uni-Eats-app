@@ -233,21 +233,23 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
         </section>
       </main>
 
-      <div className="sm:hidden p-6 ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 sticky bottom-0 z-20">
-        <button 
-          onClick={() => {
-            if (selectedMethod === PaymentMethod.CARD && savedCards.length === 0) {
-              alert("Please add a payment card first.");
-              navigate('/account/payment');
-              return;
-            }
-            onCheckout(selectedMethod, selectedMethod === PaymentMethod.CARD ? selectedCardId : undefined);
-          }}
-          className="w-full bg-primary hover:bg-opacity-90 transition-all text-white font-black py-4 rounded-2xl shadow-2xl shadow-primary/30 flex items-center justify-center space-x-3 active:scale-[0.98]"
-        >
-          <span className="material-icons-round">payment</span>
-          <span>Pay LKR {total.toFixed(2)}</span>
-        </button>
+      <div className="p-6 ios-blur bg-white/80 dark:bg-zinc-900/80 border-t border-slate-100 dark:border-zinc-800 sticky bottom-0 z-20">
+        <div className="max-w-5xl mx-auto w-full">
+          <button 
+            onClick={() => {
+              if (selectedMethod === PaymentMethod.CARD && savedCards.length === 0) {
+                alert("Please add a payment card first.");
+                navigate('/account/payment');
+                return;
+              }
+              onCheckout(selectedMethod, selectedMethod === PaymentMethod.CARD ? selectedCardId : undefined);
+            }}
+            className="w-full bg-primary hover:bg-opacity-90 transition-all text-white font-black py-4 rounded-2xl shadow-2xl shadow-primary/30 flex items-center justify-center space-x-3 active:scale-[0.98]"
+          >
+            <span className="material-icons-round">payment</span>
+            <span>Pay LKR {total.toFixed(2)}</span>
+          </button>
+        </div>
       </div>
     </div>
   );
