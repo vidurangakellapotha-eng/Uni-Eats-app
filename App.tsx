@@ -41,7 +41,7 @@ const AppContent: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
-  const [toast, setToast] = useState<{ msg: string; icon: string; color: string } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; icon: string; color: string; path?: string } | null>(null);
   const prevOrderStatusRef = useRef<string | null>(null);
   const { unreadCount, hasUnreadChat, latestNotification } = useNotifications(currentUser?.id);
 
@@ -54,7 +54,7 @@ const AppContent: React.FC = () => {
     color: string,
     orderId?: string
   ) => {
-    setToast({ msg: title, icon, color });
+    setToast({ msg: title, icon, color, path: orderId ? '/order-status' : '/notifications' });
     setTimeout(() => setToast(null), 4000);
     try {
       await addDoc(collection(db, 'notifications'), {
@@ -70,7 +70,8 @@ const AppContent: React.FC = () => {
       setToast({ 
         msg: latestNotification.title, 
         icon: latestNotification.icon || 'notifications', 
-        color: latestNotification.color || '#6366F1' 
+        color: latestNotification.color || '#6366F1',
+        path: latestNotification.type === 'order' ? '/order-status' : '/notifications'
       });
       setTimeout(() => setToast(null), 4000);
     }
@@ -167,7 +168,7 @@ const AppContent: React.FC = () => {
             }
 
             if (nTitle) {
-              setToast({ msg: nTitle, icon: nIcon, color: nColor });
+              setToast({ msg: nTitle, icon: nIcon, color: nColor, path: '/order-status' });
               setTimeout(() => setToast(null), 4000);
             }
           }
@@ -387,6 +388,12 @@ const AppContent: React.FC = () => {
             icon={toast.icon} 
             color={toast.color} 
             onClose={() => setToast(null)} 
+            onClick={() => {
+              if (toast.path) {
+                navigate(toast.path);
+                setToast(null);
+              }
+            }}
           />
         )}
 
