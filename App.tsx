@@ -34,6 +34,21 @@ import Notifications from './pages/Notifications';
 import RateOrderPage from './pages/RateOrder';
 import SupportChat from './pages/SupportChat';
 
+// Dedicated wrapper guarantees delayed reading of local storage when route renders
+const RateOrderWrapper = ({ currentUser }: { currentUser: any }) => {
+  const raw = localStorage.getItem('unieats_rating_order');
+  if (!raw) return <Navigate to="/" />;
+  const ord = JSON.parse(raw) as Order;
+  return (
+    <RateOrderPage
+      orderId={ord.id}
+      items={ord.items}
+      userId={currentUser?.id || ord.userId}
+      userName={currentUser?.name || ord.userName}
+    />
+  );
+};
+
 const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<{ role: UserRole; id: string; name: string; photoURL?: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -458,20 +473,10 @@ const AppContent: React.FC = () => {
           : <Navigate to="/" />}
       />
 
-      {/* Rating Route — reads order from localStorage, no auth guard needed */}
+      {/* Rating Route — cleanly reads from localStorage ONLY when actively navigating to it */}
       <Route
         path="/rate-order"
-        element={(() => {
-          const raw = localStorage.getItem('unieats_rating_order');
-          if (!raw) return <Navigate to="/" />;
-          const ord = JSON.parse(raw) as Order;
-          return <RateOrderPage
-            orderId={ord.id}
-            items={ord.items}
-            userId={currentUser?.id || ord.userId}
-            userName={currentUser?.name || ord.userName}
-          />;
-        })()}
+        element={<RateOrderWrapper currentUser={currentUser} />}
       />
 
       {/* Admin Route */}

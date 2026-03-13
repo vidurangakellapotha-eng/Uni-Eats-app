@@ -37,11 +37,11 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
         setOrder(fetchedOrder);
         
         if (fetchedOrder.status === OrderStatus.COMPLETED) {
-          // Trigger the rating window only for the actual ACTIVE order completing right now, ignoring historical propOrders 
+          // Keep the ID alive for 2.5 seconds so both App.tsx and OrderStatus.tsx know we are still viewing it.
           if (localStorage.getItem('unieats_active_order_id') === fetchedOrder.id) {
-            localStorage.setItem('unieats_rating_order', JSON.stringify(fetchedOrder));
-            localStorage.removeItem('unieats_active_order_id');
             setTimeout(() => {
+              localStorage.setItem('unieats_rating_order', JSON.stringify(fetchedOrder));
+              localStorage.removeItem('unieats_active_order_id');
               navigate('/rate-order');
             }, 2500);
           }

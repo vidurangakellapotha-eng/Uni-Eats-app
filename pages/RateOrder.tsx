@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { Star, MessageSquare, CheckCircle } from 'lucide-react';
 import { OrderItem } from '../types';
 
 interface RateOrderProps {
@@ -12,10 +13,10 @@ interface RateOrderProps {
   userName: string;
 }
 
-const StarRating: React.FC<{ rating: number; onRate: (r: number) => void; size?: string }> = ({ rating, onRate, size = 'text-3xl' }) => {
+const StarRating: React.FC<{ rating: number; onRate: (r: number) => void; size?: string }> = ({ rating, onRate, size = 'w-8 h-8' }) => {
   const [hovered, setHovered] = useState(0);
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-2">
       {[1, 2, 3, 4, 5].map(star => (
         <button
           key={star}
@@ -23,10 +24,9 @@ const StarRating: React.FC<{ rating: number; onRate: (r: number) => void; size?:
           onMouseEnter={() => setHovered(star)}
           onMouseLeave={() => setHovered(0)}
           onClick={() => onRate(star)}
-          className={`${size} transition-all duration-150 active:scale-90`}
-          style={{ color: star <= (hovered || rating) ? '#F59E0B' : '#E2E8F0', lineHeight: 1 }}
+          className={`transition-all duration-300 active:scale-75 ${star <= (hovered || rating) ? 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'text-slate-200 dark:text-zinc-700'}`}
         >
-          ★
+          <Star className={size} fill={star <= (hovered || rating) ? 'currentColor' : 'none'} strokeWidth={star <= (hovered || rating) ? 0 : 2} />
         </button>
       ))}
     </div>
@@ -143,108 +143,111 @@ const RateOrderPage: React.FC<RateOrderProps> = ({ orderId, items, userId, userN
 
   if (submitted) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-white dark:bg-zinc-900 p-10 text-center">
-        <div className="w-24 h-24 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center mb-6 animate-bounce">
-          <span className="text-5xl">🎉</span>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-zinc-950 p-10 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent blur-3xl rounded-full" />
+        <div className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center mb-6 animate-bounce shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+          <CheckCircle className="w-12 h-12 text-emerald-500" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white">Thanks for rating!</h2>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Your feedback helps us improve.</p>
-        <p className="text-xs text-primary font-bold mt-6 animate-pulse">Returning to menu...</p>
+        <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Thank you!</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-sm max-w-[200px]">Your feedback directly helps us improve the Uni-Eats experience.</p>
+        <p className="text-[10px] uppercase tracking-widest text-primary font-black mt-10 animate-pulse">Returning to Menu...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-zinc-950 overflow-y-auto hide-scrollbar">
-      {/* iOS Status Bar */}
-      <div className="px-8 pt-10 pb-2 flex justify-between items-center w-full">
-        <span className="text-sm font-semibold">9:41</span>
-        <div className="flex items-center space-x-1.5">
-          <span className="material-icons-round text-sm">signal_cellular_alt</span>
-          <span className="material-icons-round text-sm">wifi</span>
-          <span className="material-icons-round text-sm">battery_full</span>
-        </div>
-      </div>
+    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-zinc-950 overflow-y-auto hide-scrollbar relative">
+      
+      {/* Dynamic Background Effects */}
+      <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[40vh] bg-gradient-to-br from-orange-400/20 via-amber-200/5 to-transparent blur-3xl rounded-full pointer-events-none" />
 
       {/* Header */}
-      <div className="px-6 pt-4 pb-8 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-zinc-900 dark:to-zinc-900 -z-10" />
-        <div className="text-5xl mb-3">⭐</div>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-white">Rate Your Meal</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          How was it? Your feedback helps us improve!
+      <div className="px-6 pt-16 pb-10 text-center relative z-10">
+        <div className="inline-flex bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md p-4 rounded-3xl shadow-lg shadow-orange-500/10 mb-6 border border-white/40 dark:border-white/5">
+          <Star className="w-10 h-10 text-amber-500 fill-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
+        </div>
+        <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Rate Your Experience</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-3 px-4 leading-relaxed">
+          How was the food? Tap the stars below to let the kitchen know!
         </p>
       </div>
 
       {/* Rating Cards */}
-      <div className="px-6 pb-4 space-y-4">
+      <div className="px-6 pb-6 space-y-4 relative z-10">
         {items.map((item) => {
           const r = ratings[item.menuItemId] ?? 0;
           return (
             <div
               key={item.menuItemId}
-              className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-zinc-800"
+              className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl rounded-[2rem] p-6 shadow-sm border border-white/50 dark:border-white/5 transition-all duration-300 hover:shadow-md hover:bg-white dark:hover:bg-zinc-900"
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-start justify-between mb-5">
                 <div>
-                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</h3>
-                  <p className="text-xs text-slate-400">×{item.quantity}</p>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight mb-1">{item.name}</h3>
+                  <div className="w-10 h-1 bg-slate-100 dark:bg-zinc-800 rounded-full" />
                 </div>
                 {r > 0 && (
-                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-1 rounded-full">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-full border border-amber-100 dark:border-amber-900/50">
                     {ratingLabels[r]}
                   </span>
                 )}
               </div>
-              <StarRating
-                rating={r}
-                onRate={(star) => setRatings(prev => ({ ...prev, [item.menuItemId]: star }))}
-              />
+              <div className="flex justify-center bg-slate-50/50 dark:bg-zinc-950/50 py-4 rounded-2xl border border-slate-100/50 dark:border-zinc-800/50">
+                   <StarRating
+                     rating={r}
+                     onRate={(star) => setRatings(prev => ({ ...prev, [item.menuItemId]: star }))}
+                   />
+              </div>
             </div>
           );
         })}
 
         {/* Comment Box */}
-        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow-sm border border-slate-100 dark:border-zinc-800">
-          <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">
-            💬 Tell us more (optional)
-          </label>
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl rounded-[2rem] p-6 shadow-sm border border-white/50 dark:border-white/5 mt-6">
+          <div className="flex items-center gap-2 mb-4">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              <label className="block text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">
+                Additional Comments
+              </label>
+          </div>
           <textarea
             value={comment}
             onChange={e => setComment(e.target.value)}
-            placeholder="Was the food fresh? Portions good? Any suggestions..."
+            placeholder="Was it fresh? Portions good? (Optional)"
             rows={3}
-            className="w-full bg-slate-50 dark:bg-zinc-800 rounded-2xl p-4 text-sm text-slate-700 dark:text-white placeholder:text-slate-400 outline-none resize-none border border-transparent focus:border-primary/30 transition-all"
+            className="w-full bg-slate-50 dark:bg-zinc-950 rounded-2xl p-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none resize-none border border-slate-100 dark:border-zinc-800 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all"
           />
         </div>
       </div>
 
       {/* Bottom Actions */}
-      <div className="sticky bottom-0 px-6 pb-10 pt-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-t border-slate-100 dark:border-zinc-800 space-y-3">
+      <div className="sticky bottom-0 px-6 pt-6 pb-12 bg-gradient-to-t from-slate-50 dark:from-zinc-950 via-slate-50/95 dark:via-zinc-950/95 to-transparent z-20 space-y-4">
         {!allRated && (
-          <p className="text-center text-xs text-slate-400 font-medium">
-            Please rate all {items.length} item{items.length > 1 ? 's' : ''} to submit
-          </p>
+          <div className="flex justify-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-200/50 dark:bg-zinc-800/50 px-4 py-1.5 rounded-full backdrop-blur-md">
+                Please rate all {items.length} item{items.length > 1 ? 's' : ''}
+              </span>
+          </div>
         )}
         <button
           onClick={handleSubmit}
           disabled={!allRated || submitting}
-          className={`w-full py-4 rounded-2xl font-black text-base flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${allRated
-            ? 'bg-primary text-white shadow-xl shadow-primary/20'
-            : 'bg-slate-200 dark:bg-zinc-800 text-slate-400 cursor-not-allowed'
+          className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98] ${allRated
+            ? 'bg-primary text-white shadow-xl shadow-primary/30 hover:bg-orange-600'
+            : 'bg-slate-200 dark:bg-zinc-800 text-slate-400 cursor-not-allowed opacity-70'
             }`}
         >
           {submitting ? (
-            <><span className="material-icons-round animate-spin text-lg">sync</span> Submitting...</>
+            <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Submitting...</>
           ) : (
-            <><span className="material-icons-round">star_rate</span> Submit Rating</>
+            <>Submit Review</>
           )}
         </button>
         <button
           onClick={handleSkip}
-          className="w-full py-3 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+          className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
         >
-          Skip for now
+          Skip This Step
         </button>
       </div>
     </div>
