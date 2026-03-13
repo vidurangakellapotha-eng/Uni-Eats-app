@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import StatusBar from '../components/layout/StatusBar';
 
 const HelpSupport: React.FC = () => {
     const navigate = useNavigate();
     const [hasUnreadChat, setHasUnreadChat] = useState(false);
+    const [appRating, setAppRating] = useState(0);
+    const [hoveredRating, setHoveredRating] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submittedFeedback, setSubmittedFeedback] = useState(false);
     const user = auth.currentUser;
 
     useEffect(() => {
@@ -31,6 +35,28 @@ const HelpSupport: React.FC = () => {
         { q: "Can I cancel an order?", a: "Orders can only be cancelled within 1 minute of placing them, before preparation begins." },
         { q: "Where do I pick up my food?", a: "Look for the 'Online Pickup' counter at the main cafeteria entrance." },
     ];
+
+    const submitFeedback = async () => {
+        if (appRating === 0 || !user) return;
+        setIsSubmitting(true);
+        try {
+            // We use the 'reviews' collection (already whitelisted in security rules) to store global app feedback
+            await addDoc(collection(db, 'reviews'), {
+                userId: user.uid,
+                orderId: 'APP_FEEDBACK',
+                type: 'app_feedback',
+                rating: appRating,
+                createdAt: serverTimestamp()
+            });
+            setSubmittedFeedback(true);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to submit feedback.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-transparent">
@@ -98,12 +124,38 @@ const HelpSupport: React.FC = () => {
                 </div>
 
                 {/* Feedback */}
-                <div className="p-6 bg-primary/5 rounded-[24px] border border-primary/10 text-center space-y-4">
-                    <p className="font-bold text-slate-900 dark:text-white">Rate your experience</p>
-                    <div className="flex justify-center gap-2 text-amber-400">
-                        {[1, 2, 3, 4, 5].map(s => <span key={s} className="material-icons-round text-3xl cursor-pointer hover:scale-110 transition-transform">star</span>)}
-                    </div>
-                    <button className="text-primary text-xs font-bold uppercase tracking-widest">Submit Feedback</button>
+                <div className="p-6 bg-white dark:bg-zinc-900 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-sm text-center space-y-4">
+                    {submittedFeedback ? (
+                        <div className="space-y-2 py-4 animate-in fade-in zoom-in duration-300">
+                            <span className="material-icons-round text-emerald-500 text-5xl animate-bounce">check_circle</span>
+                            <p className="font-bold text-slate-900 dark:text-white text-lg">Thank you!</p>
+                            <p className="text-xs text-slate-500">Your feedback helps us continuously improve.</p>
+                        </div>
+                    ) : (
+                        <>
+                            <p className="font-bold text-slate-900 dark:text-white">Rate your app experience</p>
+                            <div className="flex justify-center gap-2">
+                                {[1, 2, 3, 4, 5].map(s => (
+                                    <span 
+                                        key={s} 
+                                        onMouseEnter={() => setHoveredRating(s)}
+                                        onMouseLeave={() => setHoveredRating(0)}
+                                        onClick={() => setAppRating(s)}
+                                        className={`material-icons-round text-4xl cursor-pointer transition-all active:scale-75 ${s <= (hoveredRating || appRating) ? 'text-amber-400 drop-shadow-md scale-110' : 'text-slate-200 dark:text-zinc-800 hover:text-amber-200'}`}
+                                    >
+                                        star
+                                    </span>
+                                ))}
+                            </div>
+                            <button 
+                                onClick={submitFeedback}
+                                disabled={isSubmitting || appRating === 0}
+                                className={`mt-4 w-full sm:w-auto px-8 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${appRating > 0 ? 'bg-primary text-white hover:bg-orange-600 shadow-lg shadow-primary/20 active:scale-95' : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 cursor-not-allowed'}`}
+                            >
+                                {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                            </button>
+                        </>
+                    )}
                 </div>
 
                 </div>
