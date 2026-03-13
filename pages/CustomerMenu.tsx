@@ -43,7 +43,7 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
               <img src="/logo.png" alt="Uni Eats Logo" className="w-full h-full object-cover scale-110" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">Uni Eats</h1>
+              <h1 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Uni Eats</h1>
               <p className="text-[10px] font-bold text-primary uppercase tracking-widest opacity-80">NIBM Central</p>
             </div>
           </div>

@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({ unreadCount = 0, cartCount = 0, userNam
           <div className="w-11 h-11 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/20 rotate-3 group-hover:rotate-0 transition-transform overflow-hidden border border-white/20">
             <img src="/logo.png" alt="Uni Eats Logo" className="w-full h-full object-cover scale-110" />
           </div>
-          <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic drop-shadow-sm">Uni Eats</span>
+          <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight uppercase drop-shadow-sm">Uni Eats</span>
         </Link>
 
         <nav className="flex items-center gap-1">

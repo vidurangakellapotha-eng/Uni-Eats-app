@@ -51,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ unreadCount = 0, cartCount = 0, hasUn
           <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/30 rotate-3 group-hover:rotate-0 transition-all duration-700 overflow-hidden border-2 border-white/20">
             <img src="/logo.png" alt="Uni Eats Logo" className="w-full h-full object-cover scale-110" />
           </div>
-          <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic drop-shadow-sm">Uni Eats</span>
+          <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase drop-shadow-sm">Uni Eats</span>
         </Link>
       </div>
 
