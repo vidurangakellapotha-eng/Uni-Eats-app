@@ -22,11 +22,11 @@ const Header: React.FC<HeaderProps> = ({ unreadCount = 0, cartCount = 0, userNam
   return (
     <header className="hidden sm:flex h-20 items-center justify-between px-12 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-zinc-800 sticky top-0 z-[60]">
       <div className="flex items-center gap-12">
-        <Link to="/menu" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 rotate-3 group-hover:rotate-0 transition-transform">
-            <span className="material-icons-round">restaurant</span>
+        <Link to="/menu" className="flex items-center gap-4 group">
+          <div className="w-11 h-11 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/20 rotate-3 group-hover:rotate-0 transition-transform overflow-hidden border border-white/20">
+            <img src="/logo.png" alt="Uni Eats Logo" className="w-full h-full object-cover scale-110" />
           </div>
-          <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Uni Eats</span>
+          <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight uppercase italic drop-shadow-sm">Uni Eats</span>
         </Link>
 
         <nav className="flex items-center gap-1">

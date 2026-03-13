@@ -47,9 +47,9 @@ const Sidebar: React.FC<SidebarProps> = ({ unreadCount = 0, cartCount = 0, hasUn
     <aside className="flex flex-col w-full h-full glass-panel border-r border-slate-100/50 dark:border-zinc-800/50 overflow-y-auto hide-scrollbar">
       {/* Brand */}
       <div className="p-8">
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white shadow-xl shadow-primary/30 rotate-3 group-hover:rotate-0 transition-all duration-700">
-            <span className="material-icons-round text-2xl">restaurant</span>
+        <Link to="/" className="flex items-center gap-4 group">
+          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/30 rotate-3 group-hover:rotate-0 transition-all duration-700 overflow-hidden border-2 border-white/20">
+            <img src="/logo.png" alt="Uni Eats Logo" className="w-full h-full object-cover scale-110" />
           </div>
           <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic drop-shadow-sm">Uni Eats</span>
         </Link>

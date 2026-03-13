@@ -38,9 +38,9 @@ const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCa
         </div>
 
         <header className="mobile-only-header px-6 py-6 flex justify-between items-center glass-panel shadow-lg shadow-black/5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 rotate-3">
-              <span className="material-icons-round text-xl">restaurant</span>
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/30 rotate-3 overflow-hidden border border-white/20">
+              <img src="/logo.png" alt="Uni Eats Logo" className="w-full h-full object-cover scale-110" />
             </div>
             <div>
               <h1 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">Uni Eats</h1>
