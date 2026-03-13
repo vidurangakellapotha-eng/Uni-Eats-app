@@ -79,7 +79,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
   ];
 
   const currentStatusIndex = steps.findIndex(s => s.status === order.status);
-  const activeIndex = currentStatusIndex === -1 ? 0 : currentStatusIndex;
+  const activeIndex = order.status === OrderStatus.COMPLETED ? steps.length : (currentStatusIndex === -1 ? 0 : currentStatusIndex);
 
   return (
     <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark overflow-y-auto hide-scrollbar">
@@ -148,6 +148,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
             </div>
             <div className={`px-4 py-1.5 rounded-full ${order.status === OrderStatus.PREPARING ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' :
               order.status === OrderStatus.READY ? 'bg-green-50 dark:bg-green-900/20 text-green-600' :
+              order.status === OrderStatus.COMPLETED ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' :
                 'bg-slate-100 dark:bg-zinc-800 text-slate-500'
               }`}>
               <span className="text-xs font-black uppercase tracking-wider">{order.status}</span>
@@ -213,12 +214,14 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
           </div>
         )}
 
-        <div className="mt-8 flex items-start p-5 bg-primary/5 dark:bg-white/5 rounded-2xl border border-primary/10">
-          <span className="material-icons-round text-primary dark:text-amber-500 mr-3">info</span>
-          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">
-            Please show your digital receipt <span className="font-bold text-primary dark:text-white">#{(order.id || '').slice(-6).toUpperCase()}</span> at the pickup counter once the status is "Ready for Pickup".
-          </p>
-        </div>
+        {order.status !== OrderStatus.COMPLETED && (
+          <div className="mt-8 flex items-start p-5 bg-primary/5 dark:bg-white/5 rounded-2xl border border-primary/10">
+            <span className="material-icons-round text-primary dark:text-amber-500 mr-3">info</span>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">
+              Please show your digital receipt <span className="font-bold text-primary dark:text-white">#{(order.id || '').slice(-6).toUpperCase()}</span> at the pickup counter once the status is "Ready for Pickup".
+            </p>
+          </div>
+        )}
       </main>
 
 
