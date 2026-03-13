@@ -4,9 +4,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 interface NavbarProps {
   hasUnreadSupport?: boolean;
+  photoURL?: string;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ hasUnreadSupport = false }) => {
+const Navbar: React.FC<NavbarProps> = ({ hasUnreadSupport = false, photoURL }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,7 +28,13 @@ const Navbar: React.FC<NavbarProps> = ({ hasUnreadSupport = false }) => {
             className={`flex flex-col items-center gap-1.5 transition-all outline-none ${isActive ? 'text-primary' : 'text-slate-400'}`}
           >
             <div className="relative">
-              <span className="material-icons-round text-2xl">{item.icon}</span>
+              {item.label === 'Account' && photoURL ? (
+                <div className={`w-6 h-6 rounded-full overflow-hidden border-2 shadow-sm transition-all ${isActive ? 'border-primary ring-2 ring-primary/20 scale-110' : 'border-slate-200'}`}>
+                  <img src={photoURL} alt="Profile" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <span className="material-icons-round text-2xl">{item.icon}</span>
+              )}
               {item.badge && (
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900"></span>
               )}

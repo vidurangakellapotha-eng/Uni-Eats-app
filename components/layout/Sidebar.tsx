@@ -8,10 +8,11 @@ interface SidebarProps {
   hasUnreadSupport?: boolean;
   userName?: string;
   userEmail?: string;
+  photoURL?: string;
   onLogout?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ unreadCount = 0, cartCount = 0, hasUnreadSupport = false, userName, userEmail, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ unreadCount = 0, cartCount = 0, hasUnreadSupport = false, userName, userEmail, photoURL, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -96,8 +97,12 @@ const Sidebar: React.FC<SidebarProps> = ({ unreadCount = 0, cartCount = 0, hasUn
         {userName ? (
           <div className="bg-white/40 dark:bg-zinc-800/20 backdrop-blur-md rounded-[32px] p-5 group hover:bg-white/60 dark:hover:bg-zinc-800/40 transition-all duration-700 border border-white/20">
             <div className="flex items-center gap-4 mb-5">
-              <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black uppercase shadow-inner text-lg">
-                {userName[0]}
+              <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black uppercase shadow-inner text-lg overflow-hidden border border-white/20">
+                {photoURL ? (
+                  <img src={photoURL} alt={userName} className="w-full h-full object-cover" />
+                ) : (
+                  userName[0]
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-black text-slate-900 dark:text-white truncate">{userName}</p>

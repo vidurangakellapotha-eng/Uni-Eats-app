@@ -375,6 +375,7 @@ const AppContent: React.FC = () => {
           cartCount={cartCount}
           hasUnreadSupport={hasUnreadChat}
           userName={currentUser?.name}
+          photoURL={currentUser?.photoURL}
           onLogout={handleLogout}
         />
       </div>
@@ -480,7 +481,10 @@ const AppContent: React.FC = () => {
       {currentUser && currentUser.role === UserRole.STUDENT && 
        location.pathname !== '/' && location.pathname !== '/login' && (
         <div className="mobile-only-navbar">
-          <Navbar hasUnreadSupport={hasUnreadChat} />
+          <Navbar 
+            hasUnreadSupport={hasUnreadChat} 
+            photoURL={currentUser?.photoURL}
+          />
         </div>
       )}
     </div>
