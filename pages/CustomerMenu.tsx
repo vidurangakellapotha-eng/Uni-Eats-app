@@ -16,16 +16,17 @@ interface CustomerMenuProps {
 }
 
 const CustomerMenu: React.FC<CustomerMenuProps> = ({ menuItems, cart, onUpdateCart, readOnly = false, unreadCount = 0, onClearUnread, hasUnreadSupport = false }) => {
-  const [activeCategory, setActiveCategory] = useState('Breakfast');
+  const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  const categories = ['Breakfast', 'Lunch', 'Savoury', 'Sweet', 'Drinks'];
+  const categories = ['All', 'Breakfast', 'Lunch', 'Savoury', 'Sweet', 'Drinks'];
 
-  const filteredItems = menuItems.filter(item =>
-    item.category === activeCategory &&
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = menuItems.filter(item => {
+    const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   const cartCount = (Object.values(cart) as number[]).reduce((a, b) => a + b, 0);
 
