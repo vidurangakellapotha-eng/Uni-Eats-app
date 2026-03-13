@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, writeBatch, doc } from 'firebase/firestore';
 
@@ -18,6 +18,8 @@ const SupportChat: React.FC = () => {
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const location = useLocation();
+    const processedInitialRef = useRef(false);
 
     const user = auth.currentUser;
 
@@ -125,6 +127,34 @@ const SupportChat: React.FC = () => {
             batch.commit().catch(err => console.error("Error marking messages read:", err));
         }
     }, [user, messages]);
+
+    // Automatically send initial message from FAQ if present
+    useEffect(() => {
+        const initialText = location.state?.initialMessage;
+        if (initialText && user && !processedInitialRef.current) {
+            processedInitialRef.current = true;
+            
+            // Clear location state so it doesn't re-send on refresh
+            window.history.replaceState({}, document.title);
+
+            const sendAutoMsg = async () => {
+                try {
+                    await addDoc(collection(db, 'supportMessages'), {
+                        chatId: user.uid,
+                        text: initialText,
+                        senderId: user.uid,
+                        senderName: user.displayName || 'Student',
+                        isAdmin: false,
+                        createdAt: serverTimestamp(),
+                        read: false
+                    });
+                } catch (err) {
+                    console.error("Error auto-sending FAQ question:", err);
+                }
+            };
+            sendAutoMsg();
+        }
+    }, [user, location.state]);
 
     return (
         <div className="flex flex-col h-screen bg-white dark:bg-zinc-950">

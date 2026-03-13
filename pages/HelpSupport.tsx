@@ -82,8 +82,15 @@ const HelpSupport: React.FC = () => {
                     <h3 className="font-bold text-lg text-slate-900 dark:text-white">Frequently Asked</h3>
                     <div className="space-y-4">
                         {faqs.map((faq, i) => (
-                            <div key={i} className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                                <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-2">{faq.q}</h4>
+                            <div 
+                                key={i} 
+                                onClick={() => navigate('/account/support/chat', { state: { initialMessage: faq.q } })}
+                                className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-100 dark:border-zinc-800 cursor-pointer hover:border-primary/40 active:scale-[0.98] transition-all group"
+                            >
+                                <div className="flex justify-between items-center mb-2">
+                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-primary transition-colors">{faq.q}</h4>
+                                    <span className="material-icons-round text-slate-300 text-sm">chevron_right</span>
+                                </div>
                                 <p className="text-xs text-slate-500 leading-relaxed">{faq.a}</p>
                             </div>
                         ))}

@@ -131,7 +131,7 @@ const AppContent: React.FC = () => {
   // --- Real-time orders listener from Firestore ---
   useEffect(() => {
     const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       const fetched: Order[] = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
       setOrders(fetched);
 
@@ -151,25 +151,33 @@ const AppContent: React.FC = () => {
             let nColor = '#6366F1';
 
             if (newStatus === OrderStatus.PREPARING) {
-              nTitle = '👨‍🍳 Being Prepared!';
-              nIcon = 'restaurant';
-              nColor = '#F59E0B';
+              await pushNotification(
+                currentUser.id,
+                '👨‍🍳 Being Prepared!',
+                `Your order #${shortId} is now being prepared by the kitchen and will be ready soon.`,
+                'order', 'restaurant', '#F59E0B', savedOrder.id
+              );
             } else if (newStatus === OrderStatus.READY) {
-              nTitle = '🛍 Ready for Pickup!';
-              nIcon = 'shopping_bag';
-              nColor = '#10B981';
+              await pushNotification(
+                currentUser.id,
+                '🛍 Ready for Pickup!',
+                `Order #${shortId} is hot and ready. Head to the counter to collect your meal!`,
+                'ready', 'shopping_bag', '#10B981', savedOrder.id
+              );
             } else if (newStatus === OrderStatus.COMPLETED) {
-              nTitle = '✅ Order Completed!';
-              nIcon = 'check_circle';
+              await pushNotification(
+                currentUser.id,
+                '✅ Order Completed!',
+                `Enjoy your meal! Order #${shortId} has been successfully completed.`,
+                'completed', 'check_circle', '#6366F1', savedOrder.id
+              );
             } else if (newStatus === OrderStatus.REJECTED) {
-              nTitle = '❌ Order Rejected';
-              nIcon = 'cancel';
-              nColor = '#EF4444';
-            }
-
-            if (nTitle) {
-              setToast({ msg: nTitle, icon: nIcon, color: nColor, path: '/order-status' });
-              setTimeout(() => setToast(null), 4000);
+              await pushNotification(
+                currentUser.id,
+                '❌ Order Rejected',
+                `We're sorry! Order #${shortId} has been rejected. Please check with the counter or try again.`,
+                'alert', 'cancel', '#EF4444', savedOrder.id
+              );
             }
           }
           prevOrderStatusRef.current = newStatus;
