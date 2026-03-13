@@ -183,10 +183,14 @@ const AppContent: React.FC = () => {
           prevOrderStatusRef.current = newStatus;
 
           if (newStatus === OrderStatus.COMPLETED) {
-            localStorage.setItem('unieats_rating_order', JSON.stringify(savedOrder));
-            localStorage.removeItem('unieats_active_order_id');
-            setActiveOrder(null);
-            navigate('/rate-order');
+            // Keep the active order state live for 2 seconds so the completion UI has time to render 
+            setActiveOrder(savedOrder);
+            setTimeout(() => {
+              localStorage.setItem('unieats_rating_order', JSON.stringify(savedOrder));
+              localStorage.removeItem('unieats_active_order_id');
+              setActiveOrder(null);
+              navigate('/rate-order');
+            }, 2500);
           } else if (newStatus === OrderStatus.REJECTED) {
             localStorage.removeItem('unieats_active_order_id');
             setActiveOrder(null);

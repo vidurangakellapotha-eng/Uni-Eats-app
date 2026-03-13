@@ -35,8 +35,17 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
       if (docSnap.exists()) {
         const fetchedOrder = { id: docSnap.id, ...docSnap.data() } as Order;
         setOrder(fetchedOrder);
-        // App.tsx handles COMPLETED → /rate-order. Just handle REJECTED here.
-        if (fetchedOrder.status === OrderStatus.REJECTED) {
+        
+        if (fetchedOrder.status === OrderStatus.COMPLETED) {
+          // Trigger the rating window only for the actual ACTIVE order completing right now, ignoring historical propOrders 
+          if (localStorage.getItem('unieats_active_order_id') === fetchedOrder.id) {
+            localStorage.setItem('unieats_rating_order', JSON.stringify(fetchedOrder));
+            localStorage.removeItem('unieats_active_order_id');
+            setTimeout(() => {
+              navigate('/rate-order');
+            }, 2500);
+          }
+        } else if (fetchedOrder.status === OrderStatus.REJECTED) {
           localStorage.removeItem('unieats_active_order_id');
           setOrder(null);
           navigate('/menu');
