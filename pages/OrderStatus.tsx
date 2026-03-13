@@ -17,20 +17,21 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
   const [order, setOrder] = useState<Order | null>(propOrder);
   const [loading, setLoading] = useState(false);
 
-  // Fetch directly from Firestore using localStorage orderId
-  // This fixes the timing issue when navigating from login before parent state is set
+  // Fetch directly from Firestore using localStorage orderId or propOrder.id
+  // Utilizing a real-time listener ensures the UI always syncs instantly without refreshing
   useEffect(() => {
-    const savedOrderId = localStorage.getItem('unieats_active_order_id');
+    const targetOrderId = propOrder?.id || localStorage.getItem('unieats_active_order_id');
 
-    if (propOrder) {
-      setOrder(propOrder);
-      return;
+    if (!targetOrderId) {
+        if (propOrder) {
+             setOrder(propOrder);
+        }
+        return;
     }
 
-    if (!savedOrderId) return;
+    setLoading(!propOrder); // Only load if we don't have initial data
 
-    setLoading(true);
-    const unsubscribe = onSnapshot(doc(db, 'orders', savedOrderId), (docSnap) => {
+    const unsubscribe = onSnapshot(doc(db, 'orders', targetOrderId), (docSnap) => {
       if (docSnap.exists()) {
         const fetchedOrder = { id: docSnap.id, ...docSnap.data() } as Order;
         setOrder(fetchedOrder);
@@ -49,12 +50,7 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
     });
 
     return () => unsubscribe();
-  }, [propOrder]);
-
-  // Keep in sync when parent updates propOrder
-  useEffect(() => {
-    if (propOrder) setOrder(propOrder);
-  }, [propOrder]);
+  }, [propOrder?.id, navigate]);
 
   if (loading) {
     return (
