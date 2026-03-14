@@ -22,10 +22,9 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
   useEffect(() => {
     const targetOrderId = propOrder?.id || localStorage.getItem('unieats_active_order_id');
 
-    if (!targetOrderId) {
-        if (propOrder) {
-             setOrder(propOrder);
-        }
+    // If there's no target order or if propOrder is completed but no longer in localStorage, clear it.
+    if (!targetOrderId || (propOrder?.status === OrderStatus.COMPLETED && localStorage.getItem('unieats_active_order_id') !== propOrder.id)) {
+        setOrder(null);
         return;
     }
 
@@ -70,7 +69,10 @@ const OrderStatusPage: React.FC<OrderStatusPageProps> = ({ order: propOrder, onC
     );
   }
 
-  if (!order || order.status === OrderStatus.REJECTED) {
+  // Do not render completed orders here unless they are within their final timeout window
+  const isCompletedAndStray = order?.status === OrderStatus.COMPLETED && localStorage.getItem('unieats_active_order_id') !== order.id;
+
+  if (!order || order.status === OrderStatus.REJECTED || isCompletedAndStray) {
     return (
       <div className="h-screen flex flex-col items-center justify-center p-10 text-center">
         <span className="material-icons-round text-6xl text-slate-200 mb-4">shopping_cart_checkout</span>
