@@ -20,6 +20,8 @@ const PaymentMethods: React.FC = () => {
     const [isAdding, setIsAdding] = useState(false);
     const [isFunding, setIsFunding] = useState(false); // Controls the funding modal
     const [selectedFundAmount, setSelectedFundAmount] = useState<number | null>(null); // Track selected amount before payment
+    const [isCustomAmount, setIsCustomAmount] = useState(false);
+    const [customAmountText, setCustomAmountText] = useState('');
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null); // Track the chosen card for top-up
     const [walletBalance, setWalletBalance] = useState(4250.00); // Stateful fake balance
     const [loading, setLoading] = useState(true);
@@ -149,6 +151,8 @@ const PaymentMethods: React.FC = () => {
             setSubmitting(false);
             setIsFunding(false);
             setSelectedFundAmount(null);
+            setIsCustomAmount(false);
+            setCustomAmountText('');
             setSelectedCardId(null);
             alert(`Rs. ${addedAmount.toFixed(2)} successfully added to your Campus Credits!`);
         }, 1200);
@@ -189,6 +193,8 @@ const PaymentMethods: React.FC = () => {
                             onClick={() => {
                                 setIsFunding(true);
                                 setSelectedFundAmount(null);
+                                setIsCustomAmount(false);
+                                setCustomAmountText('');
                                 setSelectedCardId(null);
                             }}
                             className="bg-white text-primary px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-50 active:scale-95 transition-all shadow-lg shadow-black/10"
@@ -327,23 +333,60 @@ const PaymentMethods: React.FC = () => {
                                 <h3 className="font-black text-slate-900 dark:text-white">Top Up Wallet</h3>
                                 <p className="text-xs text-slate-400 mt-1">Select an amount to simulate adding funds</p>
                             </div>
-                            <button onClick={() => setIsFunding(false)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+                            <button onClick={() => {
+                                setIsFunding(false);
+                                setIsCustomAmount(false);
+                                setCustomAmountText('');
+                            }} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
                                 <span className="material-icons-round text-sm">close</span>
                             </button>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-3">
-                            {[500, 1000, 2000, 5000].map(amount => (
+                            {[500, 1000, 2000].map(amount => (
                                 <button
                                     key={amount}
                                     disabled={submitting}
-                                    onClick={() => setSelectedFundAmount(amount)}
-                                    className={`py-4 rounded-2xl border-2 font-black transition-all active:scale-[0.98] ${submitting ? 'cursor-not-allowed opacity-50' : ''} ${selectedFundAmount === amount ? 'border-primary bg-primary/10 text-primary' : 'border-slate-100 dark:border-zinc-800 text-slate-400 hover:border-primary/30'}`}
+                                    onClick={() => {
+                                        setIsCustomAmount(false);
+                                        setSelectedFundAmount(amount);
+                                    }}
+                                    className={`py-4 rounded-2xl border-2 font-black transition-all active:scale-[0.98] ${submitting ? 'cursor-not-allowed opacity-50' : ''} ${selectedFundAmount === amount && !isCustomAmount ? 'border-primary bg-primary/10 text-primary' : 'border-slate-100 dark:border-zinc-800 text-slate-400 hover:border-primary/30'}`}
                                 >
                                     + {amount.toLocaleString()}
                                 </button>
                             ))}
+                            <button
+                                disabled={submitting}
+                                onClick={() => {
+                                    setIsCustomAmount(true);
+                                    setSelectedFundAmount(Number(customAmountText) || null);
+                                }}
+                                className={`py-4 rounded-2xl border-2 font-black transition-all active:scale-[0.98] ${submitting ? 'cursor-not-allowed opacity-50' : ''} ${isCustomAmount ? 'border-primary bg-primary/10 text-primary' : 'border-slate-100 dark:border-zinc-800 text-slate-400 hover:border-primary/30'}`}
+                            >
+                                Other
+                            </button>
                         </div>
+
+                        {/* Custom Amount Input */}
+                        {isCustomAmount && !submitting && (
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="relative mt-2">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400">Rs.</span>
+                                    <input 
+                                        type="number"
+                                        placeholder="Enter amount"
+                                        value={customAmountText}
+                                        onChange={(e) => {
+                                            setCustomAmountText(e.target.value);
+                                            setSelectedFundAmount(Number(e.target.value) || null);
+                                        }}
+                                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-zinc-800 border-2 border-slate-100 dark:border-zinc-800 focus:border-primary font-black text-slate-900 dark:text-white outline-none transition-all"
+                                        min="100"
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                         {/* Payment Method Selector for Top-Up */}
                         {!submitting && (
