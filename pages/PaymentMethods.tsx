@@ -346,8 +346,8 @@ const PaymentMethods: React.FC = () => {
                         </div>
 
                         {/* Payment Method Selector for Top-Up */}
-                        {selectedFundAmount && !submitting && (
-                            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        {!submitting && (
+                            <div className="space-y-3">
                                 <div className="h-px w-full bg-slate-100 dark:bg-zinc-800 my-4"></div>
                                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">Select Payment Source</h4>
                                 {cards.length === 0 ? (
@@ -383,9 +383,9 @@ const PaymentMethods: React.FC = () => {
                                 )}
                                 
                                 <button 
-                                    disabled={!selectedCardId}
+                                    disabled={!selectedCardId || !selectedFundAmount}
                                     onClick={handleAddFunds}
-                                    className={`w-full py-4 mt-2 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-lg ${selectedCardId ? 'bg-primary text-white hover:bg-orange-600 shadow-primary/20 active:scale-95' : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 cursor-not-allowed'}`}
+                                    className={`w-full py-4 mt-2 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-lg ${(selectedCardId && selectedFundAmount) ? 'bg-primary text-white hover:bg-orange-600 shadow-primary/20 active:scale-95' : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 cursor-not-allowed'}`}
                                 >
                                     Confirm Top-Up
                                 </button>
@@ -399,7 +399,7 @@ const PaymentMethods: React.FC = () => {
                             </div>
                         )}
                         
-                        {!submitting && !selectedFundAmount && (
+                        {!submitting && (
                             <p className="text-[10px] text-center text-slate-400 font-bold tracking-wider uppercase px-4 pt-2">
                                 This is a simulation. No real money will be charged.
                             </p>
