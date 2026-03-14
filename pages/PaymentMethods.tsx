@@ -14,6 +14,14 @@ interface SavedCard {
     expiryDate: string;
 }
 
+const TEST_CARD: SavedCard = {
+    id: 'test_card_visa_4242',
+    cardNumber: '**** **** **** 4242',
+    cardType: 'visa',
+    holderName: 'Universal Test Card',
+    expiryDate: '12/30'
+};
+
 const PaymentMethods: React.FC = () => {
     const navigate = useNavigate();
     const [cards, setCards] = useState<SavedCard[]>([]);
@@ -52,7 +60,7 @@ const PaymentMethods: React.FC = () => {
         const q = query(collection(db, 'payment_methods'), where('userId', '==', user.uid));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SavedCard));
-            setCards(fetched);
+            setCards([TEST_CARD, ...fetched]);
             setLoading(false);
         }, (err) => {
             console.error("Firestore error:", err);
@@ -128,6 +136,10 @@ const PaymentMethods: React.FC = () => {
     };
 
     const handleDeleteCard = async (id: string) => {
+        if (id === TEST_CARD.id) {
+            alert("This is a permanent test card provided for demonstration purposes and cannot be removed.");
+            return;
+        }
         if (window.confirm("Remove this card?")) {
             await deleteDoc(doc(db, 'payment_methods', id));
         }

@@ -12,6 +12,12 @@ interface SavedCard {
   cardType: string;
 }
 
+const TEST_CARD: SavedCard = {
+  id: 'test_card_visa_4242',
+  cardNumber: '**** **** **** 4242',
+  cardType: 'visa'
+};
+
 interface CartProps {
   menuItems: MenuItem[];
   cart: Record<string, number>;
@@ -30,7 +36,8 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
     if (!user) return;
     const q = query(collection(db, 'payment_methods'), where('userId', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const cards = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SavedCard));
+      const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SavedCard));
+      const cards = [TEST_CARD, ...fetched];
       setSavedCards(cards);
       if (cards.length > 0 && !selectedCardId) {
         setSelectedCardId(cards[0].id);
