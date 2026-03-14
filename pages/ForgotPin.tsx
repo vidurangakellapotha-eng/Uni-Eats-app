@@ -11,16 +11,22 @@ const ForgotPin: React.FC = () => {
     const [otpCode, setOtpCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
     
+    // Recovery Code State (For Dashboard Simulation)
+    const [generatedCode, setGeneratedCode] = useState('');
+    const [showMockSms, setShowMockSms] = useState(false);
+    
     // Loading States
     const [loading, setLoading] = useState(false);
 
     const handleSendCode = (e: React.FormEvent) => {
         e.preventDefault();
         if (!contactValue) return;
-        setLoading(true);
         // Simulate network request to send 6-digit code to email / phone
         setTimeout(() => {
             setLoading(false);
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            setGeneratedCode(code);
+            setShowMockSms(true);
             setStep('verify');
         }, 1200);
     };
@@ -29,9 +35,20 @@ const ForgotPin: React.FC = () => {
         e.preventDefault();
         if (otpCode.length < 6) return;
         setLoading(true);
+        
+        // Strict Validation Check
+        if (otpCode !== generatedCode) {
+            setTimeout(() => {
+                setLoading(false);
+                alert("Incorrect code. Please try again.");
+            }, 800);
+            return;
+        }
+
         // Simulate code verification
         setTimeout(() => {
             setLoading(false);
+            setShowMockSms(false); // Hide the popup once verified
             setStep('reset');
         }, 1200);
     };
@@ -57,6 +74,28 @@ const ForgotPin: React.FC = () => {
                     <span className="material-icons-round text-sm">battery_full</span>
                 </div>
             </div>
+
+            {/* MOCK SMS NOTIFICATION BANNER */}
+            {showMockSms && (
+                <div className="absolute top-12 left-4 right-4 bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 shadow-2xl z-50 animate-in slide-in-from-top-4 duration-300 pointer-events-auto border border-slate-700">
+                    <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="material-icons-round text-primary text-xl">{contactType === 'mobile' ? 'sms' : 'mail'}</span>
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex justify-between items-start">
+                                <p className="font-bold text-white text-sm">New {contactType === 'mobile' ? 'Message' : 'Email'}</p>
+                                <button onClick={() => setShowMockSms(false)} className="text-slate-400 hover:text-white transition-colors">
+                                    <span className="material-icons-round text-sm">close</span>
+                                </button>
+                            </div>
+                            <p className="text-slate-300 text-xs mt-1 leading-relaxed pr-2">
+                                Your Uni-Eats recovery code is <strong className="text-white text-sm tracking-widest">{generatedCode}</strong>.<br/>Do not share this with anyone.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="w-full flex-1 flex flex-col justify-center max-w-sm space-y-8 animate-in fade-in duration-300">
                 <button
