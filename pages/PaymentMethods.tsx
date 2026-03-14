@@ -19,6 +19,8 @@ const PaymentMethods: React.FC = () => {
     const [cards, setCards] = useState<SavedCard[]>([]);
     const [isAdding, setIsAdding] = useState(false);
     const [isFunding, setIsFunding] = useState(false); // Controls the funding modal
+    const [selectedFundAmount, setSelectedFundAmount] = useState<number | null>(null); // Track selected amount before payment
+    const [selectedCardId, setSelectedCardId] = useState<string | null>(null); // Track the chosen card for top-up
     const [walletBalance, setWalletBalance] = useState(4250.00); // Stateful fake balance
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -129,14 +131,26 @@ const PaymentMethods: React.FC = () => {
         }
     };
 
-    const handleAddFunds = (amount: number) => {
+    const handleAddFunds = () => {
+        if (!selectedFundAmount) {
+            alert("Please select an amount to add.");
+            return;
+        }
+        if (!selectedCardId) {
+            alert("Please select a valid Credit/Debit card to process the payment.");
+            return;
+        }
+
         setSubmitting(true);
         // Simulate a tiny network delay for the transaction processing UX
         setTimeout(() => {
-            setWalletBalance(prev => prev + amount);
+            setWalletBalance(prev => prev + selectedFundAmount);
+            const addedAmount = selectedFundAmount; // capture before reset
             setSubmitting(false);
             setIsFunding(false);
-            alert(`Rs. ${amount.toFixed(2)} successfully added to your Campus Credits!`);
+            setSelectedFundAmount(null);
+            setSelectedCardId(null);
+            alert(`Rs. ${addedAmount.toFixed(2)} successfully added to your Campus Credits!`);
         }, 1200);
     };
 
@@ -172,7 +186,11 @@ const PaymentMethods: React.FC = () => {
                             <h3 className="text-4xl font-black transition-all">Rs. {walletBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                         </div>
                         <button 
-                            onClick={() => setIsFunding(true)}
+                            onClick={() => {
+                                setIsFunding(true);
+                                setSelectedFundAmount(null);
+                                setSelectedCardId(null);
+                            }}
                             className="bg-white text-primary px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-50 active:scale-95 transition-all shadow-lg shadow-black/10"
                         >
                             + Add Funds
@@ -319,23 +337,71 @@ const PaymentMethods: React.FC = () => {
                                 <button
                                     key={amount}
                                     disabled={submitting}
-                                    onClick={() => handleAddFunds(amount)}
-                                    className={`py-4 rounded-2xl border-2 font-black transition-all active:scale-[0.98] ${submitting ? 'border-slate-100 dark:border-zinc-800 text-slate-300 cursor-not-allowed' : 'border-primary/20 text-primary hover:border-primary hover:bg-primary/5'}`}
+                                    onClick={() => setSelectedFundAmount(amount)}
+                                    className={`py-4 rounded-2xl border-2 font-black transition-all active:scale-[0.98] ${submitting ? 'cursor-not-allowed opacity-50' : ''} ${selectedFundAmount === amount ? 'border-primary bg-primary/10 text-primary' : 'border-slate-100 dark:border-zinc-800 text-slate-400 hover:border-primary/30'}`}
                                 >
                                     + {amount.toLocaleString()}
                                 </button>
                             ))}
                         </div>
-                        
-                        {submitting && (
-                            <div className="flex flex-col items-center justify-center py-4 bg-orange-50 dark:bg-orange-900/10 rounded-2xl">
-                                <span className="material-icons-round text-primary animate-spin text-2xl mb-2">sync</span>
-                                <span className="text-xs font-black uppercase tracking-widest text-primary">Processing Transaction...</span>
+
+                        {/* Payment Method Selector for Top-Up */}
+                        {selectedFundAmount && !submitting && (
+                            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <div className="h-px w-full bg-slate-100 dark:bg-zinc-800 my-4"></div>
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Select Payment Source</h4>
+                                {cards.length === 0 ? (
+                                    <div className="p-4 bg-rose-50 dark:bg-rose-900/10 rounded-2xl border border-rose-100 dark:border-rose-900/20 text-center">
+                                        <p className="text-xs text-rose-600 dark:text-rose-400 font-medium tracking-wide">
+                                            You must add a Credit or Debit card below before you can top up your wallet.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2 max-h-32 overflow-y-auto pr-2 hide-scrollbar">
+                                        {cards.map(card => (
+                                            <button
+                                                key={card.id}
+                                                onClick={() => setSelectedCardId(card.id)}
+                                                className={`w-full flex items-center text-left gap-3 p-3 rounded-xl border transition-all ${selectedCardId === card.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10' : 'border-slate-100 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-600'}`}
+                                            >
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${card.cardType === 'visa' ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-600'}`}>
+                                                    <span className="material-icons-round text-sm">
+                                                        {card.cardType === 'visa' ? 'credit_card' : 'payments'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className={`text-xs font-bold ${selectedCardId === card.id ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                                                        {card.cardType.toUpperCase()} {card.cardNumber.slice(-4)}
+                                                    </p>
+                                                </div>
+                                                {selectedCardId === card.id && (
+                                                    <span className="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                <button 
+                                    disabled={!selectedCardId}
+                                    onClick={handleAddFunds}
+                                    className={`w-full py-4 mt-2 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-lg ${selectedCardId ? 'bg-primary text-white hover:bg-orange-600 shadow-primary/20 active:scale-95' : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 cursor-not-allowed'}`}
+                                >
+                                    Confirm Top-Up
+                                </button>
                             </div>
                         )}
-                        {!submitting && (
-                            <p className="text-[10px] text-center text-slate-400 font-bold tracking-wider uppercase px-4">
-                                This is a simulation. No real money will be charged from your saved cards.
+                        
+                        {submitting && (
+                            <div className="flex flex-col items-center justify-center py-8 bg-orange-50 dark:bg-orange-900/10 rounded-2xl animate-in zoom-in duration-300">
+                                <span className="material-icons-round text-primary animate-spin text-4xl mb-3">sync</span>
+                                <span className="text-xs font-black uppercase tracking-[0.2em] text-primary">Processing...</span>
+                            </div>
+                        )}
+                        
+                        {!submitting && !selectedFundAmount && (
+                            <p className="text-[10px] text-center text-slate-400 font-bold tracking-wider uppercase px-4 pt-2">
+                                This is a simulation. No real money will be charged.
                             </p>
                         )}
                     </div>
