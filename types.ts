@@ -48,6 +48,7 @@ export interface Order {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   cardId?: string;
+  notes?: string; // Additional comments/instructions from the student
   timestamp: string;
   prepTime?: number; // estimated prep minutes (max across all items)
   estimatedCompletion?: string;

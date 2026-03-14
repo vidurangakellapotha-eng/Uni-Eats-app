@@ -281,7 +281,7 @@ const AppContent: React.FC = () => {
     });
   };
 
-  const handlePlaceOrder = async (paymentMethod: PaymentMethod, cardId?: string) => {
+  const handlePlaceOrder = async (paymentMethod: PaymentMethod, cardId?: string, notes?: string) => {
     const itemsToOrder = (Object.entries(cart) as [string, number][]).map(([id, qty]) => {
       const item = menuItems.find(m => m.id === id)!;
       return { menuItemId: item.id, name: item.name, quantity: qty, price: item.price };
@@ -308,9 +308,12 @@ const AppContent: React.FC = () => {
       createdAt: serverTimestamp(),
     };
 
-    // Only include cardId if it's provided (Firestore doesn't allow undefined)
+    // Only include optional fields if provided
     if (cardId) {
       newOrderData.cardId = cardId;
+    }
+    if (notes && notes.trim().length > 0) {
+      newOrderData.notes = notes.trim();
     }
 
     try {

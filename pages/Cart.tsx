@@ -22,7 +22,7 @@ interface CartProps {
   menuItems: MenuItem[];
   cart: Record<string, number>;
   onUpdateCart: (itemId: string, delta: number) => void;
-  onCheckout: (method: PaymentMethod, cardId?: string) => void;
+  onCheckout: (method: PaymentMethod, cardId?: string, notes?: string) => void;
 }
 
 const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }) => {
@@ -30,6 +30,7 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(PaymentMethod.CREDITS);
   const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string>('');
+  const [orderNotes, setOrderNotes] = useState('');
   const user = auth.currentUser;
 
   useEffect(() => {
@@ -224,6 +225,17 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
           </div>
         </section>
 
+        <section className="space-y-2">
+          <p className="px-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Special Instructions</p>
+          <textarea
+            value={orderNotes}
+            onChange={(e) => setOrderNotes(e.target.value)}
+            placeholder="e.g. No onions, extra spicy, sauce on the side..."
+            className="w-full bg-white dark:bg-zinc-900 rounded-[20px] p-4 text-sm resize-none border border-slate-100 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:text-white dark:placeholder-zinc-500 shadow-sm transition-all"
+            rows={2}
+          ></textarea>
+        </section>
+
         <section className="bg-white dark:bg-zinc-900 rounded-[32px] p-6 shadow-sm border border-slate-100 dark:border-zinc-800 space-y-3">
           <div className="flex justify-between items-center text-xs font-medium">
             <span className="text-slate-500">Subtotal</span>
@@ -249,7 +261,7 @@ const Cart: React.FC<CartProps> = ({ menuItems, cart, onUpdateCart, onCheckout }
                 navigate('/account/payment');
                 return;
               }
-              onCheckout(selectedMethod, selectedMethod === PaymentMethod.CARD ? selectedCardId : undefined);
+              onCheckout(selectedMethod, selectedMethod === PaymentMethod.CARD ? selectedCardId : undefined, orderNotes);
             }}
             className="w-full bg-primary hover:bg-opacity-90 transition-all text-white font-black py-4 rounded-2xl shadow-2xl shadow-primary/30 flex items-center justify-center space-x-3 active:scale-[0.98]"
           >
