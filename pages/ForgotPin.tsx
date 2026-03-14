@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth } from '../firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 const ForgotPin: React.FC = () => {
     const navigate = useNavigate();
@@ -18,17 +20,36 @@ const ForgotPin: React.FC = () => {
     // Loading States
     const [loading, setLoading] = useState(false);
 
-    const handleSendCode = (e: React.FormEvent) => {
+    const handleSendCode = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!contactValue) return;
-        // Simulate network request to send 6-digit code to email / phone
-        setTimeout(() => {
-            setLoading(false);
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-            setGeneratedCode(code);
-            setShowMockSms(true);
-            setStep('verify');
-        }, 1200);
+        setLoading(true);
+
+        // If the user selects EMAIL, actively trigger Firebase's secure real-world reset link!
+        if (contactType === 'email') {
+            try {
+                await sendPasswordResetEmail(auth, contactValue);
+                setLoading(false);
+                alert("SUCCESS! A secure authorized password reset link has been officially sent to your university email!\n\nPlease check your inbox and click the link to reset your password.");
+                navigate('/login');
+            } catch (err: any) {
+                setLoading(false);
+                if (err.code === 'auth/user-not-found') {
+                    alert("Error: No student account found with this email.");
+                } else {
+                    alert(`Error: ${err.message}`);
+                }
+            }
+        } else {
+            // If the user selects MOBILE, fallback to the demonstration simulated 6-digit wizard
+            setTimeout(() => {
+                setLoading(false);
+                const code = Math.floor(100000 + Math.random() * 900000).toString();
+                setGeneratedCode(code);
+                setShowMockSms(true);
+                setStep('verify');
+            }, 1200);
+        }
     };
 
     const handleVerifyCode = (e: React.FormEvent) => {
