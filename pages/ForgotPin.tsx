@@ -76,13 +76,7 @@ const ForgotPin: React.FC = () => {
 
     const handleResetPassword = (e: React.FormEvent) => {
         e.preventDefault();
-        if (newPassword.length < 6) return;
-        setLoading(true);
-        // Simulate password override in database
-        setTimeout(() => {
-            setLoading(false);
-            setStep('success');
-        }, 1200);
+        setStep('success'); // In simulated flow, we just skip changing the password.
     };
 
     return (
@@ -153,8 +147,8 @@ const ForgotPin: React.FC = () => {
                         <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 leading-relaxed px-4">
                             {step === 'choose' && 'Where should we send your secure 6-digit recovery code?'}
                             {step === 'verify' && `We just sent a 6-digit code to your ${contactType}. Enter it below to proceed.`}
-                            {step === 'reset' && 'Your code is verified! Please enter your new password.'}
-                            {step === 'success' && 'You have successfully created a new password. You can now log in.'}
+                            {step === 'reset' && 'Authentication Confirmed!'}
+                            {step === 'success' && 'Redirecting to login portal.'}
                         </p>
                     </div>
                 </div>
@@ -235,31 +229,22 @@ const ForgotPin: React.FC = () => {
 
                 {/* STEP 3: RESET PASSWORD */}
                 {step === 'reset' && (
-                    <form onSubmit={handleResetPassword} className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">New Password</label>
-                            <input
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                placeholder="Enter at least 6 characters"
-                                minLength={6}
-                                className="w-full px-4 py-4 bg-slate-50 dark:bg-zinc-800 border-none ring-1 ring-slate-200 dark:ring-zinc-700 focus:ring-2 focus:ring-primary rounded-2xl text-slate-900 dark:text-white transition-all outline-none"
-                                required
-                            />
+                    <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                        <div className="p-4 bg-orange-50 dark:bg-orange-500/10 rounded-2xl border border-orange-200 dark:border-orange-500/20 text-center">
+                            <span className="material-icons-round text-orange-500 mb-2 mt-1">info</span>
+                            <p className="text-sm font-medium text-slate-800 dark:text-orange-200 leading-relaxed">
+                                Mobile verification successful!
+                                <br /><br />
+                                To officially update your login password in the secure database, please return to the first screen and use the <strong className="text-orange-600 dark:text-orange-400">Email Method</strong>.
+                            </p>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-bold px-2 uppercase tracking-wide">
-                            Note: This is a simulated password recovery environment for demonstration purposes.
-                        </p>
                         <button
-                            type="submit"
-                            disabled={loading || newPassword.length < 6}
-                            className={`w-full text-white font-bold py-4 rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${loading || newPassword.length < 6 ? 'bg-slate-300 dark:bg-zinc-700 cursor-not-allowed' : 'bg-primary shadow-primary/20 hover:bg-orange-600'}`}
+                            onClick={() => setStep('choose')}
+                            className={`w-full text-white font-bold py-4 rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 bg-slate-900 shadow-slate-900/20 hover:bg-slate-800`}
                         >
-                            {loading ? <span className="material-icons-round animate-spin text-sm">sync</span> : null}
-                            {loading ? 'Saving...' : 'Confirm New Password'}
+                            Return to Selection
                         </button>
-                    </form>
+                    </div>
                 )}
 
                 {/* STEP 4: SUCCESS */}
