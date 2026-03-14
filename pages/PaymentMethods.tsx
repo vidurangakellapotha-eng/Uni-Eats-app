@@ -18,6 +18,8 @@ const PaymentMethods: React.FC = () => {
     const navigate = useNavigate();
     const [cards, setCards] = useState<SavedCard[]>([]);
     const [isAdding, setIsAdding] = useState(false);
+    const [isFunding, setIsFunding] = useState(false); // Controls the funding modal
+    const [walletBalance, setWalletBalance] = useState(4250.00); // Stateful fake balance
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [user, setUser] = useState<User | null>(auth.currentUser);
@@ -127,6 +129,17 @@ const PaymentMethods: React.FC = () => {
         }
     };
 
+    const handleAddFunds = (amount: number) => {
+        setSubmitting(true);
+        // Simulate a tiny network delay for the transaction processing UX
+        setTimeout(() => {
+            setWalletBalance(prev => prev + amount);
+            setSubmitting(false);
+            setIsFunding(false);
+            alert(`Rs. ${amount.toFixed(2)} successfully added to your Campus Credits!`);
+        }, 1200);
+    };
+
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-transparent">
             <div className="sm:hidden">
@@ -154,10 +167,16 @@ const PaymentMethods: React.FC = () => {
                             <span className="material-icons-round text-3xl bg-white/20 p-2 rounded-xl backdrop-blur-sm">school</span>
                             <span className="font-black tracking-widest uppercase text-[10px] opacity-70">Uni-Eats Wallet</span>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1 mb-8">
                             <p className="text-xs font-medium opacity-80">Campus Credits Balance</p>
-                            <h3 className="text-4xl font-black">Rs. 4,250.00</h3>
+                            <h3 className="text-4xl font-black transition-all">Rs. {walletBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                         </div>
+                        <button 
+                            onClick={() => setIsFunding(true)}
+                            className="bg-white text-primary px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-50 active:scale-95 transition-all shadow-lg shadow-black/10"
+                        >
+                            + Add Funds
+                        </button>
                     </div>
                 </div>
 
@@ -280,6 +299,48 @@ const PaymentMethods: React.FC = () => {
                 )}
                 </div>
             </main>
+
+            {/* Fund Wallet Modal */}
+            {isFunding && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-[32px] p-6 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+                        <div className="flex justify-between items-center border-b border-slate-100 dark:border-zinc-800 pb-4">
+                            <div>
+                                <h3 className="font-black text-slate-900 dark:text-white">Top Up Wallet</h3>
+                                <p className="text-xs text-slate-400 mt-1">Select an amount to simulate adding funds</p>
+                            </div>
+                            <button onClick={() => setIsFunding(false)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+                                <span className="material-icons-round text-sm">close</span>
+                            </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                            {[500, 1000, 2000, 5000].map(amount => (
+                                <button
+                                    key={amount}
+                                    disabled={submitting}
+                                    onClick={() => handleAddFunds(amount)}
+                                    className={`py-4 rounded-2xl border-2 font-black transition-all active:scale-[0.98] ${submitting ? 'border-slate-100 dark:border-zinc-800 text-slate-300 cursor-not-allowed' : 'border-primary/20 text-primary hover:border-primary hover:bg-primary/5'}`}
+                                >
+                                    + {amount.toLocaleString()}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        {submitting && (
+                            <div className="flex flex-col items-center justify-center py-4 bg-orange-50 dark:bg-orange-900/10 rounded-2xl">
+                                <span className="material-icons-round text-primary animate-spin text-2xl mb-2">sync</span>
+                                <span className="text-xs font-black uppercase tracking-widest text-primary">Processing Transaction...</span>
+                            </div>
+                        )}
+                        {!submitting && (
+                            <p className="text-[10px] text-center text-slate-400 font-bold tracking-wider uppercase px-4">
+                                This is a simulation. No real money will be charged from your saved cards.
+                            </p>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
