@@ -106,13 +106,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/10 dark:bg-primary/20">
-            <span className="material-icons-round text-primary text-4xl">restaurant</span>
+          <div className="w-24 h-24 rounded-[2rem] bg-primary mx-auto mb-2 flex items-center justify-center shadow-2xl shadow-primary/40 overflow-hidden border-4 border-white dark:border-zinc-900 transform rotate-3 hover:rotate-0 transition-all duration-300">
+            <img src="/logo.png" alt="Uni Eats" className="w-full h-full object-cover scale-110" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Uni Eats</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-              {isSignUp ? 'Create your student account' : 'Student Portal Access'}
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase text-slate-900 dark:text-white leading-none">
+              Uni-Eats
+            </h1>
+            <p className="text-slate-400 text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] mt-3">
+              {isSignUp ? 'Create Student Account' : 'Student Portal Access'}
             </p>
           </div>
         </div>
