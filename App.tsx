@@ -375,6 +375,8 @@ const AppContent: React.FC = () => {
   }
 
   const cartCount = (Object.values(cart) as number[]).reduce((a, b) => a + b, 0);
+  const isAuthRoute = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/forgot-pin';
+
   return (
     <div className="app-root-layout app-gradient-bg flex min-h-screen">
       <style>{`
@@ -391,16 +393,18 @@ const AppContent: React.FC = () => {
           .mobile-only-header, .mobile-only-navbar { display: none !important; }
         }
       `}</style>
-      <div className="desktop-sidebar">
-        <Sidebar 
-          unreadCount={unreadCount} 
-          cartCount={cartCount}
-          hasUnreadSupport={hasUnreadChat}
-          userName={currentUser?.name}
-          photoURL={currentUser?.photoURL}
-          onLogout={handleLogout}
-        />
-      </div>
+      {!isAuthRoute && (
+        <div className="desktop-sidebar">
+          <Sidebar 
+            unreadCount={unreadCount} 
+            cartCount={cartCount}
+            hasUnreadSupport={hasUnreadChat}
+            userName={currentUser?.name}
+            photoURL={currentUser?.photoURL}
+            onLogout={handleLogout}
+          />
+        </div>
+      )}
 
       <div className="main-view-container flex-1 flex flex-col min-h-screen relative max-w-full overflow-hidden">
         {/* Responsive Header (Visible on tablet/mobile, hidden when Sidebar is active on desktop) */}
